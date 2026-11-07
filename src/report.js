@@ -12,6 +12,8 @@
       var v = res.vals[fd.k];
       if (fd.type === 'sel') { var o = fd.options.filter(function (x) { return x.v === v; })[0]; v = o ? o.t : v; }
       if (fd.type === 'curve') v = String(v).trim().split(/\n+/).join(' | ');
+      var au = res.val.auto[fd.k];
+      if (au) v = f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2)) + ' (autocompletado)';
       rows.push([fd.group, fd.label, v === undefined || v === null || v === '' ? '(falta)' : String(v), fd.unit || '']);
     });
     return rows;
@@ -63,6 +65,29 @@
       r.push(['Arranques por hora en el peor caso', f(c.pozo.arr, 1), '/h']);
     }
     return r;
+  }
+  /* Secciones descriptivas: obstáculo, cámaras, cotas, tuberías, accesorios y arreglos de bombas */
+  function extras(res) {
+    var out = [], n = function (x, d) { return typeof x === 'number' ? f(x, d === undefined ? 2 : d) : String(x); };
+    if (res.autos && res.autos.length) out.push({ t: 'Datos completados automáticamente', hoja: 'Autocompletados', head: ['Dato', 'Valor usado', 'Unidad', 'Procedimiento', 'Fuente'], rows: res.autos.map(function (a) { return [a.label, f(a.v, a.unit === 'mm' ? 0 : (Math.abs(a.v) < 0.1 ? 4 : 2)), a.unit || '', a.how, a.src]; }) });
+    if (res.mod === 'sifon') {
+      var T = E.sifonTablas(res);
+      if (!T) return out;
+      out.push({ t: 'Descripción de las estructuras', hoja: 'Estructuras', head: ['Elemento', 'Tipo', 'Descripción'], rows: T.desc });
+      out.push({ t: 'Tuberías del sifón', hoja: 'Tuberias', head: ['Conducto', 'D int. (mm)', 'Material', 'Área (m²)', 'L real (m)', 'Q Qmin/Qmed/Qmax (L/s)', 'V Qmin/Qmed/Qmax (m/s)', 'Batea ent./sal. (m)', 'Clave punto bajo (m)', 'Función'],
+        rows: T.tubos.map(function (t) { return [String(t.id), f(t.D, 0), t.mat, f(t.A, 4), f(t.L), t.Qs.map(function (q) { return f(q, 1); }).join(' / '), t.Vs.map(function (x) { return x ? f(x) : '—'; }).join(' / '), f(t.bE) + ' / ' + f(t.bS), f(t.clave), t.fn]; }) });
+      out.push({ t: 'Cotas de fondo, de las cámaras y del obstáculo', hoja: 'Cotas', head: ['Elemento', 'Cota (m)', 'Origen'], rows: T.cotas.map(function (r) { return [r[0], f(r[1], 3), r[2]]; }) });
+      out.push({ t: 'Pendientes de las tuberías', hoja: 'Pendientes', head: ['Tramo', 'Long. horizontal (m)', 'Desnivel (m)', 'Pendiente (%)', 'Ángulo (°)', 'Long. real (m)'], rows: T.pend.map(function (r) { return [r[0], n(r[1]), n(r[2]), n(r[3]), n(r[4], 1), n(r[5])]; }) });
+      return out;
+    }
+    var B = E.bombaTablas(res), c = res.ctx;
+    if (c.alt) out.push({ t: 'Bombas en serie o en paralelo', hoja: 'Arreglos', head: ['Arreglo', 'En operación', 'Q (L/s)', 'H (m)', 'η (%)', 'Q/Qd', 'Resultado'], rows: [[c.altTxt, '', '', '', '', '', '']].concat(c.alt.slice(0, 8).map(function (o) { return [E.arregloTxt(o.nP, o.nS) + (o.actual ? ' (actual)' : ''), String(o.total), o.op ? f(o.op.Qt, 1) : '—', o.op ? f(o.op.H) : '—', o.op ? f(o.eta, 1) : '—', o.op ? f(o.op.Qt / res.v.Qd * 100, 0) + ' %' : '—', o.nota]; })) });
+    if (!B) return out;
+    out.push({ t: 'Accesorios de succión e impulsión', hoja: 'Accesorios', head: ['Tubería', 'Accesorio', 'Cantidad', 'K', 'n·K', 'Pérdida (m)'], rows: B.acc.map(function (r) { return [r[0], r[1], n(r[2], 0), n(r[3]), n(r[4]), n(r[5], 3)]; }) });
+    out.push({ t: 'Diferencias entre la tubería de succión y la de impulsión', hoja: 'Tuberias', head: ['Característica', 'Succión', 'Impulsión'], rows: B.tub });
+    out.push({ t: 'Cotas de succión e impulsión', hoja: 'Cotas', head: ['Elemento', 'Cota (m)', 'Origen'], rows: B.cotas.map(function (r) { return [r[0], f(r[1], 2), r[2]]; }) });
+    out.push({ t: 'Tanque de descarga y accesorios', hoja: 'Tanque', head: ['Elemento', 'Tipo', 'Descripción'], rows: B.desc });
+    return out;
   }
   function verifTabla(res) { return res.checks.map(function (c) { return [c.ch.id, c.ch.param, c.value, c.limit, EST[c.estado], c.ch.fuente]; }); }
   function advertTabla(res) {
@@ -118,6 +143,16 @@
         var h = document.createElement('div'); root.innerHTML = ''; root.appendChild(h);
         if (mod === 'sifon') window.Schemes.sifon(h, res, ix); else window.Schemes.bomba(h, res);
         return svgToPng(h.querySelector('svg'), 1400).then(function (im) { if (im) out.push({ t: mod === 'sifon' ? 'Perfil del sifón con ' + ['Qmin', 'Qmed', 'Qmax'][ix] : 'Esquema de la estación de bombeo', url: im.url, ratio: im.ratio }); });
+      });
+    });
+    var extraImg = mod === 'sifon'
+      ? [['planta', 'Vista en planta (Qmax)'], ['seccion', 'Tuberías del sifón: sección en el punto bajo'], ['camara', 'Cámara de entrada: separadores y vertederos']]
+      : [['lineaAcc', 'Accesorios de succión e impulsión']];
+    extraImg.forEach(function (x) {
+      seq = seq.then(function () {
+        var h = document.createElement('div'); root.innerHTML = ''; root.appendChild(h);
+        if (!window.Schemes[x[0]](h, res, 2)) return;
+        return svgToPng(h.querySelector('svg'), 1400).then(function (im) { if (im) out.push({ t: x[1], url: im.url, ratio: im.ratio }); });
       });
     });
     seq = seq.then(function () {
@@ -203,6 +238,7 @@
         table(['Grupo', 'Parámetro', 'Valor', 'Unidad'], datosTabla(res));
         H2('Resultados');
         table(['Resultado', 'Valor', 'Unidad'], resultadosTabla(res));
+        extras(res).forEach(function (x) { H2(x.t); table(x.head, x.rows, x.head[2] === 'Descripción' ? { columnStyles: { 0: { cellWidth: 32 }, 1: { cellWidth: 38 } } } : {}); });
         H2('Advertencias y sugerencias');
         var ad = advertTabla(res);
         if (ad.length) table(['Parámetro', 'Qué ocurre', 'Fuente', 'Cómo corregir'], ad, { columnStyles: { 0: { cellWidth: 38 }, 2: { cellWidth: 42 } } });
@@ -287,6 +323,7 @@
         var res = results[mod];
         html += '<h2>' + NOMBRE[mod] + '</h2><h3>Datos de entrada</h3>' + tablaHtml(['Grupo', 'Parámetro', 'Valor', 'Unidad'], datosTabla(res));
         html += '<h3>Resultados</h3>' + tablaHtml(['Resultado', 'Valor', 'Unidad'], resultadosTabla(res));
+        extras(res).forEach(function (x) { html += '<h3>' + e(x.t) + '</h3>' + tablaHtml(x.head, x.rows); });
         var ad = advertTabla(res);
         html += '<h3>Advertencias y sugerencias</h3>' + (ad.length ? tablaHtml(['Parámetro', 'Qué ocurre', 'Fuente', 'Cómo corregir'], ad) : '<p>No hay datos faltantes ni incumplimientos.</p>');
         html += '<h3>Verificaciones</h3>' + tablaHtml(['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente'], verifTabla(res));
@@ -309,12 +346,13 @@
     XLSX.utils.book_append_sheet(wb, ws, nombre);
   }
   function datosHoja(res) {
-    var a = [['Clave', 'Parámetro', 'Valor', 'Unidad', 'Grupo']];
+    var a = [['Clave', 'Parámetro', 'Valor', 'Unidad', 'Grupo', 'Valor usado (si se autocompletó)']];
     E.FIELDS[res.mod].forEach(function (fd) {
       var v = res.vals[fd.k];
       if (fd.type === 'num') { var x = E.parseNum(v); v = isNaN(x) ? (v === undefined ? '' : v) : x; }
       if (fd.type === 'curve') v = String(v).trim().split(/\n+/).join(' | ');
-      a.push([fd.k, fd.label, v, fd.unit || '', fd.group]);
+      var au = res.val.auto[fd.k];
+      a.push([fd.k, fd.label, v, fd.unit || '', fd.group, au ? au.v : '']);
     });
     return a;
   }
@@ -348,6 +386,7 @@
     hoja(wb, 'Sifon_Perfil', a, [8, 11, 22, 10, 19, 16]);
     hoja(wb, 'Sifon_Verificaciones', [['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente', 'Cómo corregir']].concat(r.sifon.checks.map(function (x) { return [x.ch.id, x.ch.param, x.value, x.limit, EST[x.estado], x.ch.fuente, x.sug]; })), [6, 34, 44, 34, 14, 60, 60]);
     hoja(wb, 'Sifon_Memoria', memoriaHoja(r.sifon), [34, 11, 100, 50]);
+    extras(r.sifon).forEach(function (x) { hoja(wb, ('Sifon_' + x.hoja).slice(0, 31), [x.head].concat(x.rows), x.head.map(function (h, i) { return i === 0 ? 30 : (h === 'Descripción' || h === 'Procedimiento' || h === 'Fuente' ? 70 : 16); })); });
 
     hoja(wb, 'Bomba_Datos', datosHoja(r.bomba), [10, 44, 40, 11, 18]);
     var b = r.bomba.ctx;
@@ -358,10 +397,10 @@
     hoja(wb, 'Bomba_Curva', a, [18, 14, 8, 11, 15]);
     a = [['Q total (L/s)', 'H sistema, nivel mínimo (m)', 'H sistema, nivel máximo (m)', 'H bomba(s) (m)']];
     if (b.op && b.curva) {
-      var qm = b.qMaxCurva * r.bomba.v.nAct;
+      var qm = b.qMaxCurva * r.bomba.v.nAct, nS = r.bomba.v.nSer || 1;
       for (var i = 0; i <= 30; i++) {
         var Q = qm * i / 30, Qp = Q / r.bomba.v.nAct;
-        a.push([Q, E.alturaSistema(Q / 1000, b.HsMax, r.bomba.v, b).H, E.alturaSistema(Q / 1000, b.HsMin, r.bomba.v, b).H, b.fit.A * Qp * Qp + b.fit.B * Qp + b.fit.C]);
+        a.push([Q, E.alturaSistema(Q / 1000, b.HsMax, r.bomba.v, b).H, E.alturaSistema(Q / 1000, b.HsMin, r.bomba.v, b).H, nS * (b.fit.A * Qp * Qp + b.fit.B * Qp + b.fit.C)]);
       }
     }
     hoja(wb, 'Bomba_Sistema', a, [14, 26, 26, 16]);
@@ -376,6 +415,7 @@
     hoja(wb, 'Bomba_Resultados', a, [26, 12, 9]);
     hoja(wb, 'Bomba_Verificaciones', [['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente', 'Cómo corregir']].concat(r.bomba.checks.map(function (x) { return [x.ch.id, x.ch.param, x.value, x.limit, EST[x.estado], x.ch.fuente, x.sug]; })), [6, 34, 44, 34, 14, 60, 60]);
     hoja(wb, 'Bomba_Memoria', memoriaHoja(r.bomba), [34, 11, 100, 50]);
+    extras(r.bomba).forEach(function (x) { hoja(wb, ('Bomba_' + x.hoja).slice(0, 31), [x.head].concat(x.rows), x.head.map(function (h, i) { return i === 0 ? 30 : (h === 'Descripción' || h === 'Procedimiento' || h === 'Fuente' || h === 'Succión' || h === 'Impulsión' ? 60 : 16); })); });
 
     hoja(wb, 'Matriz_Normativa', [['Id', 'Módulo', 'Parámetro verificado', 'Valor límite', 'Fuente', 'Condición de advertencia', 'Sugerencia', 'Nivel']].concat(matrizRows()), [6, 16, 34, 40, 60, 28, 50, 14]);
     hoja(wb, 'Plan_Pruebas', [['Id', 'Módulo', 'Tipo', 'Caso', 'Resultado esperado', 'Resultado obtenido', 'Advertencia mostrada', 'Resultado']].concat(E.correrPruebas().map(function (t) { return [t.id, NOMBRE[t.mod], t.tipo, t.desc, t.espera, t.obtenido, t.advertencia, t.paso ? 'Pasa' : 'Falla']; })), [8, 16, 14, 40, 40, 40, 70, 9]);

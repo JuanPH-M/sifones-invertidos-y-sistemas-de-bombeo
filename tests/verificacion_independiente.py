@@ -126,7 +126,7 @@ cmp('Ariete: celeridad a (m/s)', a, A['a'])
 cmp('Ariete: Joukowsky (m)', a * Vi / G, A['jouk'])
 cmp('Ariete: Michaud (m)', 2 * 450 * Vi / (G * 30), A['mich'])
 cmp('Pozo: volumen (m3)', 8 * 4 * 1.2, A['Vol'])
-cmp('Pozo: retencion (min)', 8 * 4 * 1.2 / 0.1 / 60, A['tRet'])
+cmp('Pozo: retencion (min)', 8 * 4 * 1.2 / 0.105 / 60, A['tRet'])
 
 print(f"{'Variable':44}{'Manual':>12}{'App':>12}{'Dif %':>9}")
 for n, m, a_, d in rows:

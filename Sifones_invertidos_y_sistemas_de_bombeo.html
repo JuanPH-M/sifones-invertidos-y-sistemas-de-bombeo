@@ -113,6 +113,12 @@ main{max-width:1560px;margin:0 auto;padding:18px}
 .field.miss .ctrl{border-color:var(--warn);background:var(--warn-soft)}
 .field .err{font-size:.77rem;color:var(--bad);margin-top:3px;font-weight:600}
 .field.miss .err{color:var(--warn)}
+.autotag{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:.02em;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px;text-transform:uppercase}
+.field.isauto .ctrl{border-style:dashed;border-color:var(--accent)}
+.field .autonote{font-size:.75rem;color:var(--ink-2);margin-top:4px;line-height:1.35;background:var(--accent-soft);border-radius:5px;padding:5px 7px}
+.field .autonote b{color:var(--accent)}
+.acc-table td:first-child{white-space:normal;min-width:120px}
+.acc-table input{width:100%}
 .flash{animation:flash 1.3s ease}
 @keyframes flash{0%,60%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:none}}
 .curve-table{width:100%;border-collapse:collapse;font-size:.8rem}
@@ -782,18 +788,104 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
 
   /* ---------- Materiales ---------- */
   var MATERIALS = {
-    pvc: { label: 'PVC / PVCO', ks: 0.0015, E: 2.75, nu: 0.40, n: 0.010, C: 150 },
-    pe: { label: 'Polietileno (largo plazo)', ks: 0.007, E: 0.2, nu: 0.45, n: 0.012, C: 150 },
-    hd: { label: 'Hierro dúctil', ks: 0.25, E: 165.5, nu: 0.28, n: 0.012, C: 130 },
-    hdm: { label: 'Hierro dúctil con mortero', ks: 0.10, E: 165.5, nu: 0.28, n: 0.012, C: 140 },
-    acero: { label: 'Acero comercial', ks: 0.45, E: 206.8, nu: 0.30, n: 0.012, C: 130 },
-    grp: { label: 'GRP (fibra de vidrio)', ks: 0.029, E: 8.96, nu: 0.30, n: 0.010, C: 150 },
-    ccp: { label: 'CCP (concreto con cilindro)', ks: 0.12, E: 24.0, nu: 0.20, n: 0.011, C: 130 }
+    pvc: { label: 'PVC / PVCO', ks: 0.0015, E: 2.75, nu: 0.40, n: 0.010, C: 150, d: 'Tubería a presión de PVC o PVC orientado, con unión mecánica y empaque de caucho. Es liviana, lisa y no se corroe con el agua residual. Se instala sobre cama de arena con relleno compactado.' },
+    pe: { label: 'Polietileno (largo plazo)', ks: 0.007, E: 0.2, nu: 0.45, n: 0.012, C: 150, d: 'Polietileno de alta densidad unido por termofusión, sin juntas mecánicas. Es flexible: sirve para cruzar ríos por arrastre o por perforación dirigida.' },
+    hd: { label: 'Hierro dúctil', ks: 0.25, E: 165.5, nu: 0.28, n: 0.012, C: 130, d: 'Hierro dúctil con junta automática o mecánica. Resiste cargas grandes: sirve en cruces bajo vías. Necesita revestimiento interno contra la corrosión.' },
+    hdm: { label: 'Hierro dúctil con mortero', ks: 0.10, E: 165.5, nu: 0.28, n: 0.012, C: 140, d: 'Hierro dúctil con revestimiento interno de mortero de cemento: menos rugoso y protegido del agua residual. Resiste cargas de tráfico.' },
+    acero: { label: 'Acero comercial', ks: 0.45, E: 206.8, nu: 0.30, n: 0.012, C: 130, d: 'Acero soldado. Se usa en cruces aéreos, en camisas de hincado y con presiones altas. Requiere recubrimiento y protección catódica.' },
+    grp: { label: 'GRP (fibra de vidrio)', ks: 0.029, E: 8.96, nu: 0.30, n: 0.010, C: 150, d: 'Plástico reforzado con fibra de vidrio. Liviano y resistente a la corrosión; conveniente en diámetros grandes.' },
+    ccp: { label: 'CCP (concreto con cilindro)', ks: 0.12, E: 24.0, nu: 0.20, n: 0.011, C: 130, d: 'Concreto con cilindro de acero. Para diámetros grandes y presiones medias; muy rígido y pesado.' }
   };
   function matOptions() {
     var o = Object.keys(MATERIALS).map(function (k) { return { v: k, t: MATERIALS[k].label }; });
     o.push({ v: 'otro', t: 'Otro (se usan los valores escritos)' });
     return o;
+  }
+
+  /* ---------- Descripciones de estructuras ---------- */
+  var DESCR = {
+    obst: {
+      rio: { t: 'Río', rec: 1.5, zobs: 'lecho del río', znivel: 'nivel de aguas máximas', d: 'Cauce permanente. El sifón pasa bajo el lecho y se protege contra la socavación con recubrimiento, dado de concreto o enrocado. Se ancla para que no flote cuando está vacío.' },
+      arroyo: { t: 'Arroyo o quebrada', rec: 1.0, zobs: 'fondo del cauce', znivel: 'nivel de creciente', d: 'Cauce de caudal variable, seco en verano y con crecientes rápidas. El conducto va bajo el fondo con dado de concreto y el cauce se protege en la zona del cruce.' },
+      canal: { t: 'Canal de drenaje', rec: 1.0, zobs: 'fondo del canal', znivel: 'nivel de agua del canal', d: 'Canal revestido o en tierra. El conducto pasa bajo la losa de fondo sin debilitarla y se deja una junta para que el canal no cargue sobre el tubo.' },
+      via: { t: 'Vía vehicular', rec: 1.2, zobs: 'rasante de la vía', znivel: 'rasante de la vía', d: 'Cruce bajo una calle o carretera. El conducto recibe la carga del tráfico: se protege con camisa (tubo de mayor diámetro) o dado de concreto y se construye a cielo abierto o por hincado.' },
+      ferrea: { t: 'Vía férrea', rec: 1.5, zobs: 'base del balasto', znivel: 'nivel del riel', d: 'Cruce bajo una línea férrea. Se hace por hincado con camisa de acero, sin interrumpir el tráfico, con el recubrimiento que fije el operador férreo.' },
+      tuberia: { t: 'Otra tubería o red', rec: 0.3, zobs: 'batea de la red existente', znivel: 'clave de la red existente', d: 'Cruce bajo otra red (acueducto, gas, colector). Se deja una separación libre entre las dos tuberías y se protege la red existente durante la excavación.' },
+      depresion: { t: 'Depresión del terreno', rec: 0.6, zobs: 'fondo de la depresión', znivel: 'terreno en la depresión', d: 'Vaguada o zona baja que el colector no puede salvar por gravedad. El sifón sigue el terreno con el recubrimiento mínimo de una tubería enterrada.' }
+    },
+    camE: {
+      lateral: { t: 'Vertederos laterales con tabiques', d: 'El colector llega a un canal central. Cada conducto tiene su compartimiento separado por tabiques. El conducto 1 toma el caudal mínimo desde el fondo; cuando el nivel sube, el agua vierte sobre la cresta del compartimiento siguiente y entra el conducto 2, y así hasta Qmax (Res. 0330 Art. 158 num. 5). La rejilla va antes de los vertederos.' },
+      frontal: { t: 'Vertederos frontales escalonados', d: 'Los compartimientos quedan uno detrás de otro en la dirección del flujo y las crestas suben de uno al siguiente. Ocupa menos ancho y más largo que la cámara de vertederos laterales.' },
+      compuertas: { t: 'Compuertas o tablones', d: 'Los conductos se ponen en servicio abriendo compuertas, y la altura de la cresta se fija con tablones (stop-logs). Es flexible, pero exige operación y vigilancia.' }
+    },
+    camS: {
+      tabiques: { t: 'Con tabiques y vertederos', d: 'Cada conducto descarga en su propio compartimiento y vierte al canal de salida. Los tabiques evitan que el agua se devuelva y deje sedimento en los conductos que no están en servicio.' },
+      simple: { t: 'Cámara de unión simple', d: 'Todos los conductos descargan al mismo recinto y de allí al colector de salida. Es más económica, pero el agua puede entrar a los conductos sin servicio y sedimentar en ellos.' }
+    },
+    sep: {
+      concreto: { t: 'Tabiques de concreto reforzado', e: 0.20, d: 'Muros fundidos con la cámara, de 0,15 a 0,25 m de espesor. Separan el compartimiento de cada conducto y llevan la cresta del vertedero.' },
+      removible: { t: 'Placas o tablones removibles', e: 0.10, d: 'Placas en ranuras metálicas. Permiten cambiar la altura de la cresta y aislar un conducto para limpieza.' }
+    },
+    tanque: {
+      quiebre: { t: 'Cámara de quiebre', d: 'Recibe la impulsión, disipa la energía y entrega a un colector por gravedad. Lleva tapa de inspección y ventilación.' },
+      tanque: { t: 'Tanque de almacenamiento', d: 'Tanque que regula el caudal entre el bombeo y la red. Lleva rebose, desagüe y ventilación.' },
+      canal: { t: 'Llegada a planta de tratamiento', d: 'Canal o cámara de entrada de la planta de tratamiento. La salida se ubica para no generar turbulencia en el cribado.' }
+    },
+    descarga: {
+      ahogada: { t: 'Descarga ahogada', d: 'La salida queda bajo el nivel del agua: no entra aire y no salpica. La altura estática se mide hasta el nivel de agua.' },
+      libre: { t: 'Descarga libre', d: 'La salida queda sobre el nivel del agua. La altura estática se mide hasta el eje de la salida, no hasta el nivel de agua.' }
+    }
+  };
+  function optsDe(m) { return Object.keys(m).map(function (k) { return { v: k, t: m[k].t }; }); }
+
+  /* ---------- Accesorios y coeficientes K ---------- */
+  var ACC = [
+    { id: 'entrada_recta', t: 'Entrada de borde recto', K: 0.5, en: 'su' },
+    { id: 'entrada_campana', t: 'Entrada abocinada (campana)', K: 0.1, en: 'su' },
+    { id: 'codo90', t: 'Codo de 90°', K: 0.9, en: 'ambos' },
+    { id: 'codo45', t: 'Codo de 45°', K: 0.4, en: 'ambos' },
+    { id: 'tee_dir', t: 'Tee, paso directo', K: 0.6, en: 'ambos' },
+    { id: 'tee_lat', t: 'Tee, salida lateral', K: 1.8, en: 'ambos' },
+    { id: 'v_comp', t: 'Válvula de compuerta abierta', K: 0.2, en: 'ambos' },
+    { id: 'v_mari', t: 'Válvula de mariposa abierta', K: 0.3, en: 'ambos' },
+    { id: 'v_cheq', t: 'Válvula de cheque (retención)', K: 2.5, en: 'im' },
+    { id: 'reduccion', t: 'Reducción excéntrica', K: 0.5, en: 'su' },
+    { id: 'ampliacion', t: 'Ampliación concéntrica', K: 0.3, en: 'im' },
+    { id: 'union', t: 'Unión de desmontaje', K: 0.1, en: 'ambos' }
+  ];
+  var ACC_BY = {};
+  ACC.forEach(function (a) { ACC_BY[a.id] = a; });
+  function parseAcc(txt) {
+    var out = [], errs = [];
+    String(txt || '').split(/[;\n]+/).map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (p) {
+      var m = p.match(/^([a-z0-9_]+)\s*=\s*([^@]+?)\s*(?:@\s*(.+))?$/i);
+      if (!m || !ACC_BY[m[1]]) { errs.push('Accesorio no reconocido: "' + p + '".'); return; }
+      var n = parseNum(m[2]), K = m[3] === undefined ? ACC_BY[m[1]].K : parseNum(m[3]);
+      if (isNaN(n) || n < 0 || Math.floor(n) !== n) { errs.push(ACC_BY[m[1]].t + ': la cantidad debe ser un entero mayor o igual a 0.'); return; }
+      if (isNaN(K) || K < 0) { errs.push(ACC_BY[m[1]].t + ': K debe ser un número mayor o igual a 0.'); return; }
+      if (n > 0) out.push({ id: m[1], t: ACC_BY[m[1]].t, n: n, K: K, nK: n * K });
+    });
+    return { items: out, errs: errs, sum: out.reduce(function (s, a) { return s + a.nK; }, 0) };
+  }
+
+  /* ---------- Autocompletado ---------- */
+  var r05 = function (x) { return Math.round(x * 20) / 20; };
+  var dn05 = function (x) { return Math.floor(x * 20 + 1e-9) / 20; };
+  var up05 = function (x) { return Math.ceil(x * 20 - 1e-9) / 20; };
+  var up10mm = function (m) { return Math.ceil(m * 100 - 1e-9) * 10; };
+  var upStep = function (x, s) { return Math.round(Math.ceil(x / s - 1e-9) * s * 1000) / 1000; };
+  var has = function (v, ks) { return ks.every(function (k) { return v[k] !== undefined && v[k] !== null && !(typeof v[k] === 'number' && isNaN(v[k])); }); };
+  var auto = function (val, how, src) { return { v: val, how: how, src: src || 'Valor genérico adoptado por el grupo; reemplácelo si tiene el dato real.' }; };
+  function vminDe(v) { return v.tipo === 'pluvial' ? 1.2 : 1.0; }
+  function dEstimado(Q, Vmin) { return Math.sqrt(4 * Q / (Math.PI * Vmin)); }
+  /* Cota de batea de los conductos en las cámaras para que trabajen ahogados con todos los caudales */
+  function bateaAhogada(v) {
+    if (!has(v, ['Zs', 'Ds', 'Ss', 'ns', 'Qmin', 'Qmed', 'Qmax', 'tipo'])) return null;
+    var vm = vminDe(v), ys = normalDepth(v.Qmin / 1000, v.Ds / 1000, v.ns, v.Ss / 100).y;
+    var Ds = [v.Qmin, Math.max(v.Qmed - v.Qmin, 1e-6), Math.max(v.Qmax - v.Qmed, 1e-6)].map(function (q) { return dEstimado(q / 1000, vm); });
+    var Dm = Math.max.apply(null, Ds);
+    var z = dn05(v.Zs + ys - Dm);
+    return { z: z, ys: ys, Dm: Dm };
   }
 
   /* ---------- Campos de entrada ---------- */
@@ -803,15 +895,29 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
   var sel = function (k, label, group, def, options, opt) {
     return Object.assign({ k: k, label: label, unit: '', group: group, def: def, type: 'sel', options: options }, opt || {});
   };
+  var autoMat = function (prop, src) {
+    return function (v) {
+      var m = MATERIALS[v.mat];
+      if (!m) return null;
+      return auto(m[prop], 'Valor del material escogido (' + m.label + ').', src);
+    };
+  };
+  var ACC_SU_DEF = 'entrada_recta=1; codo90=2; v_comp=1; reduccion=1';
+  var ACC_IM_DEF = 'ampliacion=1; v_cheq=1; v_comp=1; tee_lat=1; tee_dir=1; codo90=2; codo45=2';
 
   var FIELDS = {
     sifon: [
       sel('tipo', 'Tipo de alcantarillado', 'Sistema', 'sanitario', [{ v: 'sanitario', t: 'Sanitario (aguas residuales)' }, { v: 'pluvial', t: 'Pluvial o combinado' }], { hint: 'Define V mínima, D mínimo y esfuerzo cortante (Art. 158).' }),
       sel('metodo', 'Método de pérdidas', 'Sistema', 'RAS', [{ v: 'RAS', t: 'RAS Título D, Darcy-Colebrook (D.7.40 a D.7.43)' }, { v: 'HEC', t: 'HEC-22, Manning (Ec. 9.4, 9.5, 9.6, 9.15)' }], { hint: 'El otro método se calcula también para comparar.' }),
-      num('T', 'Temperatura del agua', '°C', 'Sistema', 20, { min: 0, max: 50, hint: 'Densidad y viscosidad: RAS Tabla B.6.28.' }),
+      num('T', 'Temperatura del agua', '°C', 'Sistema', 20, { min: 0, max: 50, hint: 'Densidad y viscosidad: RAS Tabla B.6.28.', auto: function () { return auto(20, 'Temperatura usual del agua residual en clima cálido.'); } }),
       num('Qmin', 'Caudal mínimo', 'L/s', 'Caudales de diseño', 40, { gt: 0 }),
       num('Qmed', 'Caudal medio', 'L/s', 'Caudales de diseño', 120, { gt: 0 }),
       num('Qmax', 'Caudal máximo', 'L/s', 'Caudales de diseño', 260, { gt: 0 }),
+      sel('obst', 'Tipo de obstáculo que se cruza', 'Obstáculo', 'arroyo', optsDe(DESCR.obst), { hint: 'Cambia el dibujo, la descripción y el recubrimiento sugerido.' }),
+      num('Zobs', 'Cota del fondo del obstáculo', 'm', 'Obstáculo', 96.0, { hint: 'Lecho del río o arroyo, rasante de la vía o batea de la red que se cruza.' }),
+      num('Znivel', 'Cota del nivel de agua o superficie del obstáculo', 'm', 'Obstáculo', 98.0, { hint: 'Nivel de creciente del cauce; en vías, la rasante.', auto: function (v) { return has(v, ['Zobs']) ? auto(v.Zobs, 'Sin lámina de agua: se toma igual al fondo del obstáculo (' + fmt(v.Zobs) + ' m).') : null; } }),
+      num('Bobs', 'Ancho del obstáculo', 'm', 'Obstáculo', 36, { gt: 0, hint: 'Ancho que debe cubrir el tramo inferior del sifón.', auto: function (v) { return has(v, ['Lc']) ? auto(Math.max(v.Lc - 2, 0.5), 'Ancho = Lc − 2·1,0 m de margen = ' + fmt(v.Lc) + ' − 2 = ' + fmt(Math.max(v.Lc - 2, 0.5)) + ' m.', 'Criterio de diseño: 1,0 m de margen a cada lado del obstáculo.') : null; } }),
+      num('recub', 'Recubrimiento sobre la clave bajo el obstáculo', 'm', 'Obstáculo', '', { ge: 0, max: 10, hint: 'Vacío: se toma el valor sugerido para el tipo de obstáculo.', auto: function (v) { var o = DESCR.obst[v.obst]; return o ? auto(o.rec, 'Valor sugerido para "' + o.t + '": ' + fmt(o.rec) + ' m sobre la clave.', 'Criterio de diseño del grupo. Confirme con la autoridad del cauce, de la vía o de la red (RAS D.2.7.4 para distancias a otras redes).') : null; } }),
       sel('modo', 'Dimensionamiento de conductos', 'Conductos del sifón', 'auto', [{ v: 'auto', t: 'Automático (N y D calculados)' }, { v: 'manual', t: 'Manual (yo fijo N y D)' }]),
       num('lista', 'Diámetros internos disponibles', 'mm', 'Conductos del sifón', '200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1200', { type: 'text', hint: 'Lista de referencia: reemplácela por los diámetros internos reales del fabricante.', when: function (v) { return v.modo === 'auto'; } }),
       num('N', 'Número de conductos', 'und', 'Conductos del sifón', 3, { min: 1, max: 4, integer: true, when: function (v) { return v.modo === 'manual'; } }),
@@ -820,67 +926,93 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       num('D3', 'Diámetro interno conducto 3', 'mm', 'Conductos del sifón', 400, { gt: 0, max: 3000, when: function (v) { return v.modo === 'manual' && +v.N >= 3; } }),
       num('D4', 'Diámetro interno conducto 4', 'mm', 'Conductos del sifón', 400, { gt: 0, max: 3000, when: function (v) { return v.modo === 'manual' && +v.N >= 4; } }),
       sel('reparto', 'Reparto de caudal entre conductos', 'Conductos del sifón', 'vert', [{ v: 'vert', t: 'Regulado por vertederos, por incrementos (Art. 158.5)' }, { v: 'libre', t: 'Paralelo libre, igual pérdida en todos' }], { hint: 'Regulado: Q1 = Qmin, Q2 = Qmed − Qmin, Q3 = Qmax − Qmed.' }),
-      num('hw', 'Carga de diseño sobre vertederos', 'm', 'Conductos del sifón', 0.10, { gt: 0, max: 2, hint: 'Criterio de diseño: eleva el nivel de la cámara cuando entra otro conducto.', when: function (v) { return v.reparto === 'vert'; } }),
+      num('hw', 'Carga de diseño sobre vertederos', 'm', 'Conductos del sifón', 0.10, { gt: 0, max: 2, hint: 'Criterio de diseño: eleva el nivel de la cámara cuando entra otro conducto.', when: function (v) { return v.reparto === 'vert'; }, auto: function () { return auto(0.10, 'Carga usual de 0,10 m sobre la cresta.', 'Criterio de diseño del grupo.'); } }),
       sel('mat', 'Material de los conductos', 'Conductos del sifón', 'pvc', matOptions(), { hint: 'Carga ks (RAS Tabla B.6.29) y n (HEC-22 Tabla 9.1).' }),
-      num('ks', 'Rugosidad absoluta ks', 'mm', 'Conductos del sifón', 0.0015, { ge: 0, max: 10 }),
-      num('n', 'n de Manning del conducto', '-', 'Conductos del sifón', 0.010, { gt: 0, max: 0.05 }),
+      num('ks', 'Rugosidad absoluta ks', 'mm', 'Conductos del sifón', 0.0015, { ge: 0, max: 10, auto: autoMat('ks', 'RAS Título B, Tabla B.6.29, p. 169.') }),
+      num('n', 'n de Manning del conducto', '-', 'Conductos del sifón', 0.010, { gt: 0, max: 0.05, auto: autoMat('n', 'HEC-22, Tabla 9.1, p. 140.') }),
       sel('rejilla', '¿Hay rejilla antes del sifón?', 'Conductos del sifón', 'si', [{ v: 'si', t: 'Sí' }, { v: 'no', t: 'No' }], { hint: 'Exigida si D ≤ 760 mm (Art. 158.7).' }),
+      sel('camE', 'Tipo de cámara de entrada', 'Cámaras y separadores', 'lateral', optsDe(DESCR.camE)),
+      sel('camS', 'Tipo de cámara de salida', 'Cámaras y separadores', 'tabiques', optsDe(DESCR.camS)),
+      sel('sep', 'Separadores entre conductos', 'Cámaras y separadores', 'concreto', optsDe(DESCR.sep)),
+      num('esep', 'Espesor de los separadores', 'm', 'Cámaras y separadores', '', { gt: 0, max: 1, auto: function (v) { var s = DESCR.sep[v.sep]; return s ? auto(s.e, 'Espesor usual para "' + s.t + '".', 'Criterio de diseño del grupo.') : null; } }),
+      num('Ztce', 'Cota de la tapa de la cámara de entrada', 'm', 'Cámaras y separadores', '', { hint: 'Vacío: clave del colector de llegada + 1,20 m.', auto: function (v) { if (!has(v, ['Ze', 'De'])) return null; var z = up05(v.Ze + v.De / 1000 + 1.2); return auto(z, 'Tapa = batea llegada + De + 1,20 m = ' + fmt(v.Ze) + ' + ' + fmt(v.De / 1000, 3) + ' + 1,20 = ' + fmt(z) + ' m.', 'Criterio de diseño: 1,20 m de recubrimiento sobre la clave, valor usual bajo vías vehiculares. Confirme con la norma local.'); } }),
+      num('Ztcs', 'Cota de la tapa de la cámara de salida', 'm', 'Cámaras y separadores', '', { hint: 'Vacío: clave del colector de salida + 1,20 m.', auto: function (v) { if (!has(v, ['Zs', 'Ds'])) return null; var z = up05(v.Zs + v.Ds / 1000 + 1.2); return auto(z, 'Tapa = batea salida + Ds + 1,20 m = ' + fmt(v.Zs) + ' + ' + fmt(v.Ds / 1000, 3) + ' + 1,20 = ' + fmt(z) + ' m.', 'Criterio de diseño: 1,20 m de recubrimiento sobre la clave, valor usual bajo vías vehiculares. Confirme con la norma local.'); } }),
       num('Ze', 'Cota batea colector de llegada', 'm', 'Colector de llegada', 100.2, {}),
       num('De', 'Diámetro interno de llegada', 'mm', 'Colector de llegada', 600, { gt: 0, max: 5000 }),
       num('Se', 'Pendiente de llegada', '%', 'Colector de llegada', 0.3, { gt: 0, max: 30 }),
-      num('ne', 'n de Manning de llegada', '-', 'Colector de llegada', 0.013, { gt: 0, max: 0.05 }),
+      num('ne', 'n de Manning de llegada', '-', 'Colector de llegada', 0.013, { gt: 0, max: 0.05, auto: function () { return auto(0.013, 'Tubería de concreto: HEC-22 da 0,011 a 0,013; se toma el valor alto, del lado seguro.', 'HEC-22, Tabla 9.1, p. 140.'); } }),
       num('Zs', 'Cota batea colector de salida', 'm', 'Colector de salida', 98.6, {}),
-      num('Ds', 'Diámetro interno de salida', 'mm', 'Colector de salida', 600, { gt: 0, max: 5000 }),
-      num('Ss', 'Pendiente de salida', '%', 'Colector de salida', 0.3, { gt: 0, max: 30 }),
-      num('ns', 'n de Manning de salida', '-', 'Colector de salida', 0.013, { gt: 0, max: 0.05 }),
-      num('Zci', 'Cota batea conductos en cámara de entrada', 'm', 'Trazado del sifón', 98.6, { hint: 'Debe quedar por debajo del nivel de agua para que trabaje a presión.' }),
-      num('Zcs', 'Cota batea conductos en cámara de salida', 'm', 'Trazado del sifón', 98.3, {}),
-      num('Zf', 'Cota batea del tramo inferior', 'm', 'Trazado del sifón', 94.5, {}),
-      num('Ld', 'Longitud horizontal del tramo que baja', 'm', 'Trazado del sifón', 20, { gt: 0 }),
-      num('Lc', 'Longitud del tramo inferior', 'm', 'Trazado del sifón', 40, { ge: 0 }),
-      num('La', 'Longitud horizontal del tramo que sube', 'm', 'Trazado del sifón', 30, { gt: 0 }),
-      num('Zobs', 'Cota del fondo del obstáculo cruzado', 'm', 'Trazado del sifón', 96.0, { hint: 'Fondo del río, vía o tubería que se atraviesa. El conducto debe pasar por debajo.' }),
-      num('Znivel', 'Cota del terreno o nivel en el obstáculo', 'm', 'Trazado del sifón', 98.0, {})
+      num('Ds', 'Diámetro interno de salida', 'mm', 'Colector de salida', 600, { gt: 0, max: 5000, auto: function (v) { return has(v, ['De']) ? auto(v.De, 'Igual al colector de llegada (' + fmt(v.De, 0) + ' mm).', 'Criterio de diseño: el colector continúa con el mismo diámetro.') : null; } }),
+      num('Ss', 'Pendiente de salida', '%', 'Colector de salida', 0.3, { gt: 0, max: 30, auto: function (v) { return has(v, ['Se']) ? auto(v.Se, 'Igual a la pendiente de llegada (' + fmt(v.Se) + ' %).', 'Criterio de diseño: el colector continúa con la misma pendiente.') : null; } }),
+      num('ns', 'n de Manning de salida', '-', 'Colector de salida', 0.013, { gt: 0, max: 0.05, auto: function () { return auto(0.013, 'Tubería de concreto: HEC-22 da 0,011 a 0,013; se toma el valor alto.', 'HEC-22, Tabla 9.1, p. 140.'); } }),
+      num('Zci', 'Cota batea conductos en cámara de entrada', 'm', 'Trazado del sifón', 98.6, { hint: 'Debe quedar por debajo del nivel de agua para que trabaje a presión.', auto: function (v) { var b = bateaAhogada(v); return b ? auto(b.z, 'Para que el conducto mayor entre ahogado: Zs + y(Qmin) − D estimado = ' + fmt(v.Zs) + ' + ' + fmt(b.ys, 3) + ' − ' + fmt(b.Dm, 3) + ' → ' + fmt(b.z) + ' m. D estimado = √(4Q/πVmin) del mayor incremento de caudal.', 'RAS D.7.8.3, p. 186 (conducto a presión) y Res. 0330 Art. 158 num. 3.') : null; } }),
+      num('Zcs', 'Cota batea conductos en cámara de salida', 'm', 'Trazado del sifón', 98.3, { auto: function (v) { var b = bateaAhogada(v); return b ? auto(b.z, 'Para que el conducto mayor descargue lleno: Zs + y(Qmin) − D estimado = ' + fmt(v.Zs) + ' + ' + fmt(b.ys, 3) + ' − ' + fmt(b.Dm, 3) + ' → ' + fmt(b.z) + ' m.', 'RAS D.7.8.3, p. 186 (conducto a presión).') : null; } }),
+      num('Zf', 'Cota batea del tramo inferior', 'm', 'Trazado del sifón', 94.5, { auto: function (v) {
+        if (!has(v, ['Zobs', 'recub'])) return null;
+        var D = v.modo === 'manual' ? Math.max.apply(null, [v.D1, v.D2, v.D3, v.D4].slice(0, v.N || 1).filter(function (x) { return x > 0; }).concat([0])) / 1000 : (has(v, ['De']) ? v.De / 1000 : null);
+        if (!D) return null;
+        var z = dn05(v.Zobs - v.recub - D);
+        return auto(z, 'Zf = fondo del obstáculo − recubrimiento − D = ' + fmt(v.Zobs) + ' − ' + fmt(v.recub) + ' − ' + fmt(D, 3) + ' = ' + fmt(z) + ' m' + (v.modo === 'manual' ? '' : ' (D = diámetro del colector, del lado seguro)') + '.', 'Paso bajo el obstáculo (verificación S16).');
+      } }),
+      num('Ld', 'Longitud horizontal del tramo que baja', 'm', 'Trazado del sifón', 20, { gt: 0, auto: function (v) { if (!has(v, ['Zci', 'Zf']) || v.Zci <= v.Zf) return null; var L = upStep((v.Zci - v.Zf) / Math.tan(22.5 * Math.PI / 180), 0.5); return auto(L, 'Mínimo para θ ≤ 22,5°: (Zci − Zf)/tan 22,5° = ' + fmt(v.Zci - v.Zf) + '/0,414 → ' + fmt(L, 1) + ' m.', 'Res. 0330/2017 Art. 158 num. 4.'); } }),
+      num('Lc', 'Longitud del tramo inferior', 'm', 'Trazado del sifón', 40, { ge: 0, auto: function (v) { return has(v, ['Bobs']) ? auto(upStep(v.Bobs + 2, 0.5), 'Ancho del obstáculo + 1,0 m a cada lado = ' + fmt(v.Bobs, 1) + ' + 2 = ' + fmt(upStep(v.Bobs + 2, 0.5), 1) + ' m.', 'Criterio de diseño: el tramo inferior cubre todo el obstáculo.') : null; } }),
+      num('La', 'Longitud horizontal del tramo que sube', 'm', 'Trazado del sifón', 30, { gt: 0, auto: function (v) { if (!has(v, ['Zcs', 'Zf']) || v.Zcs <= v.Zf) return null; var L = upStep((v.Zcs - v.Zf) / 0.15, 0.5); return auto(L, 'Mínimo para pendiente ≤ 15 % (y por tanto θ ≤ 22,5°): (Zcs − Zf)/0,15 = ' + fmt(v.Zcs - v.Zf) + '/0,15 → ' + fmt(L, 1) + ' m.', 'HEC-22 §8.4.3, p. 134; Res. 0330/2017 Art. 158 num. 4.'); } })
     ],
     bomba: [
       sel('sistema', 'Sistema', 'Sistema', 'alcantarillado', [{ v: 'alcantarillado', t: 'Alcantarillado (Res. 0330 Art. 160 y 161)' }, { v: 'acueducto', t: 'Acueducto (RAS Título B cap. 8)' }]),
       sel('agua', 'Agua a bombear', 'Sistema', 'residual', [{ v: 'residual', t: 'Residual' }, { v: 'lluvia', t: 'Lluvia' }], { hint: 'Fija el tiempo máximo de retención (Art. 160.8).', when: function (v) { return v.sistema === 'alcantarillado'; } }),
-      num('Qd', 'Caudal de diseño de la estación', 'L/s', 'Sistema', 100, { gt: 0 }),
-      num('T', 'Temperatura del agua', '°C', 'Sistema', 20, { min: 0, max: 50, hint: 'Pv: RAS Tabla B.6.35. Densidad y viscosidad: Tabla B.6.28.' }),
-      num('alt', 'Altitud del sitio', 'm s.n.m.', 'Sistema', 10, { min: -100, max: 5000, hint: 'Cartagena ≈ 2 a 15 m s.n.m. La presión atmosférica sale de la atmósfera estándar.' }),
-      num('Znmin', 'Nivel mínimo en el pozo', 'm', 'Niveles', 10.0, {}),
-      num('Znmax', 'Nivel máximo en el pozo', 'm', 'Niveles', 11.2, {}),
-      num('Zdis', 'Nivel de descarga', 'm', 'Niveles', 28.0, {}),
-      num('Zeje', 'Cota del eje de la bomba', 'm', 'Niveles', 9.0, { hint: 'Plano de referencia del NPSH.' }),
-      num('Zboca', 'Cota de la boca de succión', 'm', 'Niveles', 8.9, {}),
-      num('Zfondo', 'Cota del fondo del pozo', 'm', 'Niveles', 8.6, {}),
-      sel('mat', 'Material de la tubería', 'Tuberías', 'pvc', matOptions(), { hint: 'Carga ks (Tabla B.6.29) y E (Tabla B.6.36).' }),
-      sel('fric', 'Ecuación de fricción', 'Tuberías', 'darcy', [{ v: 'darcy', t: 'Darcy-Weisbach con Colebrook-White' }, { v: 'hazen', t: 'Hazen-Williams' }], { hint: 'Ambas admitidas por RAS B.8.5.2.' }),
-      num('ks', 'Rugosidad absoluta ks', 'mm', 'Tuberías', 0.0015, { ge: 0, max: 10, when: function (v) { return v.fric === 'darcy'; } }),
-      num('C', 'Coeficiente C de Hazen-Williams', '-', 'Tuberías', 150, { gt: 0, max: 200, when: function (v) { return v.fric === 'hazen'; } }),
-      num('Dsu', 'Diámetro interno de succión', 'mm', 'Tuberías', 350, { gt: 0, max: 3000 }),
-      num('Lsu', 'Longitud de succión', 'm', 'Tuberías', 8, { gt: 0 }),
-      num('Ksu', 'ΣK de succión', '-', 'Tuberías', 3.0, { ge: 0, hint: 'Por bomba: entrada, codos, válvula, reducción.' }),
-      num('Dim', 'Diámetro interno de impulsión', 'mm', 'Tuberías', 250, { gt: 0, max: 3000 }),
-      num('Lim', 'Longitud de impulsión', 'm', 'Tuberías', 450, { gt: 0 }),
-      num('Kim', 'ΣK de impulsión', '-', 'Tuberías', 8.0, { ge: 0, hint: 'Sin contar la salida: Hv se suma aparte (HEC-22 Ec. 12.1).' }),
-      num('nInst', 'Bombas instaladas', 'und', 'Bombas', 2, { min: 1, max: 8, integer: true }),
-      num('nAct', 'Bombas en operación (paralelo)', 'und', 'Bombas', 1, { min: 1, max: 8, integer: true }),
-      num('etaM', 'Eficiencia del motor', '%', 'Bombas', 93, { gt: 0, max: 100 }),
+      num('Qd', 'Caudal de diseño de la estación', 'L/s', 'Sistema', 105, { gt: 0, hint: 'El punto de operación debe quedar cerca de este caudal.' }),
+      num('T', 'Temperatura del agua', '°C', 'Sistema', 20, { min: 0, max: 50, hint: 'Pv: RAS Tabla B.6.35. Densidad y viscosidad: Tabla B.6.28.', auto: function () { return auto(20, 'Temperatura usual del agua en clima cálido.'); } }),
+      num('alt', 'Altitud del sitio', 'm s.n.m.', 'Sistema', 10, { min: -100, max: 5000, hint: 'Cartagena ≈ 2 a 15 m s.n.m. La presión atmosférica sale de la atmósfera estándar.', auto: function () { return auto(0, 'Nivel del mar: da la presión atmosférica mayor; en sitios altos el NPSH disponible baja.'); } }),
+      num('Znmin', 'Cota del nivel mínimo de agua en la succión', 'm', 'Cotas de succión (pozo)', 10.0, { hint: 'Nivel de apagado de las bombas.' }),
+      num('Znmax', 'Cota del nivel máximo de agua en la succión', 'm', 'Cotas de succión (pozo)', 11.2, { hint: 'Nivel de arranque de las bombas.' }),
+      num('Zboca', 'Cota de succión (boca de la tubería)', 'm', 'Cotas de succión (pozo)', 8.9, { auto: function (v) { if (!has(v, ['Znmin', 'Dsu'])) return null; var alc = v.sistema !== 'acueducto', S = alc ? 2.5 * v.Dsu / 1000 : Math.max(2.05 * v.Dsu / 1000, 0.5), z = dn05(v.Znmin - S); return auto(z, 'Sumergencia mínima ' + (alc ? '2,5·Ds' : 'mayor que 2·Ds y 0,50 m') + ' = ' + fmt(S, 3) + ' m: Zboca = ' + fmt(v.Znmin) + ' − ' + fmt(S, 3) + ' → ' + fmt(z) + ' m.', alc ? 'Res. 0330/2017 Art. 161 num. 7.' : 'RAS B.8.4.7.2, p. 352.'); } }),
+      num('Zfondo', 'Cota del fondo del pozo', 'm', 'Cotas de succión (pozo)', 8.6, { auto: function (v) { if (!has(v, ['Zboca', 'Dsu'])) return null; var s = up05(Math.max(0.5 * v.Dsu / 1000, 0.25)), z = r05(v.Zboca - s); return auto(z, 'Separación al fondo = máx(0,5·Ds; 0,25 m) = ' + fmt(s) + ' m: Zfondo = ' + fmt(v.Zboca) + ' − ' + fmt(s) + ' = ' + fmt(z) + ' m.', 'RAS D.8.4.7.3, p. 206.'); } }),
+      num('Zeje', 'Cota del eje de la bomba', 'm', 'Cotas de succión (pozo)', 9.0, { hint: 'Plano de referencia del NPSH.', auto: function (v) { if (v.tipoB === 'sumergible') return has(v, ['Zboca']) ? auto(r05(v.Zboca + 0.1), 'Bomba sumergible: eje 0,10 m sobre la boca de succión.', 'Criterio de diseño del grupo; se verifica con el NPSH (B5).') : null; return has(v, ['Znmin']) ? auto(r05(v.Znmin - 0.5), 'Bomba horizontal con succión positiva: eje 0,50 m bajo el nivel mínimo.', 'Criterio de diseño del grupo; se verifica con el NPSH (B5).') : null; } }),
+      num('Zdis', 'Cota del nivel de agua en la impulsión (descarga)', 'm', 'Cotas de impulsión y descarga', 28.0, {}),
+      sel('descarga', 'Forma de la descarga', 'Cotas de impulsión y descarga', 'ahogada', optsDe(DESCR.descarga), { hint: 'Fija hasta dónde se mide la altura estática.' }),
+      num('Zimp', 'Cota de impulsión (eje de la salida al tanque)', 'm', 'Cotas de impulsión y descarga', '', { auto: function (v) { if (!has(v, ['Zdis', 'Dim'])) return null; var d = 0.3 + v.Dim / 2000, z = v.descarga === 'libre' ? up05(v.Zdis + d) : dn05(v.Zdis - d); return auto(z, (v.descarga === 'libre' ? 'Salida libre: nivel + 0,30 m + Di/2' : 'Salida ahogada: nivel − 0,30 m − Di/2') + ' → ' + fmt(z) + ' m.', 'Criterio de diseño del grupo.'); } }),
+      sel('tanque', 'Tipo de tanque de descarga', 'Cotas de impulsión y descarga', 'quiebre', optsDe(DESCR.tanque)),
+      num('Ltq', 'Largo interior del tanque de descarga', 'm', 'Cotas de impulsión y descarga', '', { gt: 0, auto: function (v) { if (!has(v, ['Dim'])) return null; var L = Math.max(1.5, upStep(6 * v.Dim / 1000, 0.1)); return auto(L, 'máx(1,5 m; 6·Di) = ' + fmt(L) + ' m, para disipar el chorro.', 'Criterio de diseño del grupo.'); } }),
+      num('Btq', 'Ancho interior del tanque de descarga', 'm', 'Cotas de impulsión y descarga', '', { gt: 0, auto: function (v) { if (!has(v, ['Dim'])) return null; var B = Math.max(1.0, upStep(4 * v.Dim / 1000, 0.1)); return auto(B, 'máx(1,0 m; 4·Di) = ' + fmt(B) + ' m.', 'Criterio de diseño del grupo.'); } }),
+      num('Zftq', 'Cota del fondo del tanque de descarga', 'm', 'Cotas de impulsión y descarga', '', { auto: function (v) { if (!has(v, ['Zdis', 'Zimp', 'Dim'])) return null; var z = dn05(Math.min(v.Zimp - v.Dim / 2000 - 0.3, v.Zdis - 0.6)); return auto(z, 'El menor entre (salida − Di/2 − 0,30 m) y (nivel − 0,60 m) → ' + fmt(z) + ' m.', 'Criterio de diseño del grupo.'); } }),
+      sel('mat', 'Material de las tuberías', 'Material', 'pvc', matOptions(), { hint: 'Carga ks (Tabla B.6.29) y E (Tabla B.6.36).' }),
+      sel('fric', 'Ecuación de fricción', 'Material', 'darcy', [{ v: 'darcy', t: 'Darcy-Weisbach con Colebrook-White' }, { v: 'hazen', t: 'Hazen-Williams' }], { hint: 'Ambas admitidas por RAS B.8.5.2.' }),
+      num('ks', 'Rugosidad absoluta ks', 'mm', 'Material', 0.0015, { ge: 0, max: 10, when: function (v) { return v.fric === 'darcy'; }, auto: autoMat('ks', 'RAS Título B, Tabla B.6.29, p. 169.') }),
+      num('C', 'Coeficiente C de Hazen-Williams', '-', 'Material', 150, { gt: 0, max: 200, when: function (v) { return v.fric === 'hazen'; }, auto: autoMat('C', 'Valor usual del material; confirme con el fabricante.') }),
+      sel('kmodo', 'Pérdidas menores', 'Material', 'acc', [{ v: 'acc', t: 'Calcular ΣK con los accesorios' }, { v: 'manual', t: 'Escribir ΣK directamente' }]),
+      num('Dsu', 'Diámetro interno de succión', 'mm', 'Tubería de succión (una por bomba)', 350, { gt: 0, max: 3000, auto: function (v) { if (!has(v, ['Qd', 'nAct', 'Dim'])) return null; var Vo = v.sistema === 'acueducto' ? 1.0 : 1.2, d1 = up10mm(dEstimado(v.Qd / 1000 / v.nAct, Vo)), d = Math.max(d1, v.Dim + 50); return auto(d, 'Para V = ' + fmt(Vo, 1) + ' m/s con Qd/n = ' + fmt(v.Qd / v.nAct, 1) + ' L/s: √(4Q/πV) → ' + d1 + ' mm; y Ds ≥ Di + 50 = ' + fmt(v.Dim + 50, 0) + ' mm → ' + d + ' mm.', 'Res. 0330/2017 Art. 161 num. 2; RAS D.8.4.8.1, p. 207.'); } }),
+      num('Lsu', 'Longitud de succión', 'm', 'Tubería de succión (una por bomba)', 8, { gt: 0 }),
+      num('accSu', 'Accesorios de la succión', '', 'Tubería de succión (una por bomba)', ACC_SU_DEF, { type: 'acc', en: 'su', when: function (v) { return v.kmodo !== 'manual'; } }),
+      num('Ksu', 'ΣK de succión', '-', 'Tubería de succión (una por bomba)', 3.0, { ge: 0, hint: 'Por bomba: entrada, codos, válvula, reducción.', when: function (v) { return v.kmodo === 'manual'; } }),
+      num('Dim', 'Diámetro interno de impulsión', 'mm', 'Tubería de impulsión (común)', 250, { gt: 0, max: 3000, auto: function (v) { if (!has(v, ['Qd'])) return null; var d = up10mm(dEstimado(v.Qd / 1000, 2.0)); return auto(d, 'Para V = 2,0 m/s, centro del rango 1,5 a 2,4 m/s: √(4·' + fmt(v.Qd / 1000, 4) + '/(π·2,0)) → ' + d + ' mm.', 'Res. 0330/2017 Art. 161 num. 3.'); } }),
+      num('Lim', 'Longitud de impulsión', 'm', 'Tubería de impulsión (común)', 450, { gt: 0 }),
+      num('accIm', 'Accesorios de la impulsión', '', 'Tubería de impulsión (común)', ACC_IM_DEF, { type: 'acc', en: 'im', when: function (v) { return v.kmodo !== 'manual'; } }),
+      num('Kim', 'ΣK de impulsión', '-', 'Tubería de impulsión (común)', 8.0, { ge: 0, hint: 'Sin contar la salida: Hv se suma aparte (HEC-22 Ec. 12.1).', when: function (v) { return v.kmodo === 'manual'; } }),
+      num('nInst', 'Bombas instaladas', 'und', 'Bombas', 2, { min: 1, max: 12, integer: true }),
+      num('nAct', 'Bombas en paralelo en operación', 'und', 'Bombas', 1, { min: 1, max: 8, integer: true }),
+      num('nSer', 'Bombas en serie por línea', 'und', 'Bombas', 1, { min: 1, max: 4, integer: true, hint: 'En serie se suman las alturas; en paralelo, los caudales.' }),
+      num('etaM', 'Eficiencia del motor', '%', 'Bombas', 93, { gt: 0, max: 100, auto: function () { return auto(93, 'Motor de eficiencia alta (IE3) de potencia media.', 'Valor genérico: use el dato de placa del motor.'); } }),
       sel('tipoB', 'Tipo de bomba', 'Bombas', 'sumergible', [{ v: 'sumergible', t: 'Sumergible' }, { v: 'horizontal', t: 'Horizontal o vertical' }], { hint: 'Fija los arranques por hora (RAS D.8.4.7.1).' }),
       sel('vfd', '¿Motor con variador (≥ 40 Hz)?', 'Bombas', 'si', [{ v: 'si', t: 'Sí' }, { v: 'no', t: 'No' }], { when: function (v) { return v.sistema === 'alcantarillado'; } }),
       sel('respaldo', '¿Respaldo energético ≥ 12 h?', 'Bombas', 'si', [{ v: 'si', t: 'Sí' }, { v: 'no', t: 'No' }], { when: function (v) { return v.sistema === 'alcantarillado'; } }),
       num('curva', 'Curva suministrada Q, H, η, NPSHr', 'L/s, m, %, m', 'Bombas', '0, 36, 0, 2.0\n30, 35, 45, 2.3\n60, 33, 65, 2.8\n90, 29.5, 76, 3.5\n120, 25, 78, 4.6\n150, 19, 70, 6.2', { type: 'curve', hint: 'Una fila por punto, mínimo 3. Es la curva de catálogo de UNA bomba.' }),
-      num('E', 'Módulo de elasticidad de la tubería', 'GPa', 'Golpe de ariete', 2.75, { gt: 0, max: 400 }),
-      num('nu', 'Relación de Poisson', '-', 'Golpe de ariete', 0.40, { ge: 0, lt: 0.5 }),
+      num('E', 'Módulo de elasticidad de la tubería', 'GPa', 'Golpe de ariete', 2.75, { gt: 0, max: 400, auto: autoMat('E', 'RAS Título B, Tabla B.6.36, p. 181.') }),
+      num('nu', 'Relación de Poisson', '-', 'Golpe de ariete', 0.40, { ge: 0, lt: 0.5, auto: autoMat('nu', 'Valor usual del material.') }),
       num('esp', 'Espesor de pared', 'mm', 'Golpe de ariete', 12, { gt: 0, max: 200 }),
       num('Tc', 'Tiempo de cierre o maniobra', 's', 'Golpe de ariete', 30, { gt: 0, hint: 'Rápido si T ≤ 2L/a: se aplica Joukowsky.' }),
       num('PN', 'Presión admisible de la tubería', 'm.c.a.', 'Golpe de ariete', 100, { gt: 0 }),
-      num('LB', 'Largo del pozo húmedo', 'm', 'Pozo húmedo', 8, { gt: 0 }),
-      num('BB', 'Ancho del pozo húmedo', 'm', 'Pozo húmedo', 4, { gt: 0 }),
-      num('Dla', 'Diámetro de la tubería de llegada al pozo', 'mm', 'Pozo húmedo', 450, { gt: 0, max: 5000 })
+      num('LB', 'Largo del pozo húmedo', 'm', 'Pozo húmedo', 8, { gt: 0, auto: function (v) { var p = pozoAuto(v); return p ? auto(p.L, p.how + ' Largo = A/B = ' + fmt(p.A) + '/' + fmt(p.B, 1) + ' → ' + fmt(p.L, 1) + ' m.', 'Res. 0330/2017 Art. 160 num. 7.') : null; } }),
+      num('BB', 'Ancho del pozo húmedo', 'm', 'Pozo húmedo', 4, { gt: 0, auto: function (v) { var p = pozoAuto(v); return p ? auto(p.B, p.how + ' Ancho = √(A/2) → ' + fmt(p.B, 1) + ' m (pozo de largo doble del ancho).', 'Res. 0330/2017 Art. 160 num. 7.') : null; } }),
+      num('Dla', 'Diámetro de la tubería de llegada al pozo', 'mm', 'Pozo húmedo', 450, { gt: 0, max: 5000, auto: function (v) { if (!has(v, ['Qd'])) return null; var Vo = v.sistema === 'acueducto' ? 0.6 : 0.65, d = Math.round(dEstimado(v.Qd / 1000, Vo) * 100) * 10; return auto(d, 'Para V = ' + fmt(Vo) + ' m/s: √(4Q/πV) → ' + d + ' mm.', v.sistema === 'acueducto' ? 'RAS B.8.4.7.4, p. 353.' : 'Res. 0330/2017 Art. 160 num. 6; RAS D.8.4.7.4, p. 207.'); } })
     ]
   };
+  function pozoAuto(v) {
+    if (!has(v, ['Qd', 'Znmin', 'Znmax']) || !(v.Znmax > v.Znmin)) return null;
+    var h = v.Znmax - v.Znmin, Vr = 2.5 * (v.Qd * 1.25 / 1000 * 60), A = Vr / h;
+    var B = upStep(Math.sqrt(A / 2), 0.1), L = upStep(A / B, 0.1);
+    return { A: A, B: B, L: L, how: 'Volumen = 2,5·(1,25·Qd en m³/min) = ' + fmt(Vr) + ' m³; área = V/(Nmáx − Nmín) = ' + fmt(Vr) + '/' + fmt(h) + ' = ' + fmt(A) + ' m² (el 1,25 cubre que el bombeo supere a Qd).' };
+  }
 
   function defaults(mod) {
     var o = {};
@@ -955,11 +1087,11 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
 
   /* ---------- Validación de entradas ---------- */
   function validate(mod, vals) {
-    var out = { values: {}, missing: {}, invalid: {} };
+    var out = { values: {}, missing: {}, invalid: {}, auto: {} };
     FIELDS[mod].forEach(function (f) {
       if (f.when && !f.when(vals)) { out.values[f.k] = null; return; }
       var raw = vals[f.k];
-      if (f.type === 'sel' || f.type === 'text' || f.type === 'curve') {
+      if (f.type === 'sel' || f.type === 'text' || f.type === 'curve' || f.type === 'acc') {
         if (raw === undefined || raw === null || String(raw).trim() === '') out.missing[f.k] = f;
         else out.values[f.k] = raw;
         return;
@@ -977,6 +1109,21 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       if (why) out.invalid[f.k] = { field: f, why: why };
       else out.values[f.k] = x;
     });
+    /* Datos vacíos que se pueden completar con la norma o con un valor genérico.
+       Se repite hasta que no se complete nada más, porque unos dependen de otros. */
+    for (var pass = 0; pass < 6; pass++) {
+      var avance = false;
+      FIELDS[mod].forEach(function (f) {
+        if (!f.auto || !out.missing[f.k]) return;
+        var a = f.auto(out.values, vals);
+        if (!a || a.v === undefined || a.v === null || !isFinite(a.v)) return;
+        delete out.missing[f.k];
+        out.values[f.k] = a.v;
+        out.auto[f.k] = { field: f, v: a.v, how: a.how, src: a.src };
+        avance = true;
+      });
+      if (!avance) break;
+    }
     return out;
   }
   function usable(v, k) { return v.values[k] !== undefined && !v.missing[k] && !v.invalid[k]; }
@@ -1075,6 +1222,18 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       run: function (v, c) {
         c.lim = limitesSifon(v.tipo);
         return { value: 'V ≥ ' + fmt(c.lim.Vmin, 1) + ' m/s, D ≥ ' + c.lim.Dmin + ' mm', lines: ['Red ' + v.tipo + ': V mínima = ' + fmt(c.lim.Vmin, 1) + ' m/s; D interno real mínimo = ' + c.lim.Dmin + ' mm; τ mínimo = ' + fmt(c.lim.tau, 1) + ' Pa (' + c.lim.artTau + ')'] };
+      }
+    },
+    {
+      id: 'obstaculo', title: 'Obstáculo que se cruza', inputs: ['obst', 'Zobs', 'Znivel', 'Bobs', 'recub'], deps: [], src: 'Res. 0330/2017 Art. 158; recubrimiento por criterio de diseño (RAS D.2.7.4 para otras redes)',
+      run: function (v, c) {
+        var o = DESCR.obst[v.obst];
+        c.obs = { tipo: v.obst, t: o.t, d: o.d, recub: v.recub, zmax: v.Zobs - v.recub };
+        return {
+          value: o.t + ', ancho ' + fmt(v.Bobs, 1) + ' m',
+          lines: [o.t + ': ' + o.d, 'Fondo (' + o.zobs + ') = ' + fmt(v.Zobs) + ' m; superficie (' + o.znivel + ') = ' + fmt(v.Znivel) + ' m; ancho = ' + fmt(v.Bobs, 1) + ' m',
+            'Cota máxima de la clave del tramo inferior = ' + fmt(v.Zobs) + ' − ' + fmt(v.recub) + ' = ' + fmt(c.obs.zmax) + ' m']
+        };
       }
     },
     {
@@ -1256,6 +1415,37 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       }
     },
     {
+      id: 'camaras', title: 'Cámaras, separadores y vertederos', inputs: ['camE', 'camS', 'sep', 'esep', 'Ztce', 'Ztcs', 'De', 'Ds'], deps: ['niveles'], src: 'Res. 0330/2017 Art. 158 num. 5 y 6; dimensiones por criterio de diseño del grupo',
+      run: function (v, c) {
+        var N = c.bs.length, e = v.esep, lines = [];
+        var lv = {}; (c.crestas || []).forEach(function (x) { lv[x.id] = x; });
+        var comp = c.bs.map(function (b, i) {
+          var x = lv[b.id];
+          return { id: b.id, D: b.D, b: Math.max(b.D / 1000 + 0.30, 0.60), cresta: i === 0 ? null : (x ? x.cresta : null), Lv: x && x.b ? x.b : null, h: x ? x.h : null };
+        });
+        var sumB = comp.reduce(function (s, k) { return s + k.b; }, 0) + (N - 1) * e;
+        var maxLv = Math.max.apply(null, comp.map(function (k) { return k.Lv || 0; }).concat([0]));
+        var maxD = Math.max.apply(null, c.bs.map(function (b) { return b.D / 1000; }));
+        var ent;
+        if (v.camE === 'frontal') ent = { B: Math.max(1.2, maxD + 0.6, maxLv), L: Math.max(1.5, sumB) };
+        else ent = { B: Math.max(1.2, sumB), L: Math.max(1.5, v.De / 1000 + 0.9, maxLv + 0.5) };
+        ent.fondo = v.Zci; ent.tapa = v.Ztce; ent.H = v.Ztce - v.Zci; ent.NA = c.casos[2].NAe; ent.bl = v.Ztce - c.casos[2].NAe; ent.comp = comp;
+        var sal = v.camS === 'simple'
+          ? { B: Math.max(1.2, c.bs.reduce(function (s, b) { return s + b.D / 1000; }, 0) + (N - 1) * 0.30 + 0.60), L: Math.max(1.5, v.Ds / 1000 + 0.9) }
+          : { B: Math.max(1.2, sumB), L: Math.max(1.5, v.Ds / 1000 + 0.9) };
+        sal.fondo = v.Zcs; sal.tapa = v.Ztcs; sal.H = v.Ztcs - v.Zcs; sal.NA = c.casos[2].NAs; sal.bl = v.Ztcs - c.casos[2].NAs;
+        c.cam = { ent: ent, sal: sal, e: e };
+        lines.push('Cámara de entrada (' + DESCR.camE[v.camE].t + '): ' + N + ' compartimiento(s) separados por ' + DESCR.sep[v.sep].t.toLowerCase() + ' de ' + fmt(e) + ' m.');
+        comp.forEach(function (k, i) {
+          lines.push('  Compartimiento ' + k.id + ' (Ø' + fmt(k.D, 0) + '): ancho = máx(D + 0,30; 0,60) = ' + fmt(k.b) + ' m; ' + (i === 0 ? 'sin vertedero, toma Qmin por el fondo' : (k.cresta !== null ? 'vertedero con cresta a ' + fmt(k.cresta, 3) + ' m' + (k.Lv ? ', longitud ' + fmt(k.Lv) + ' m' : '') : 'sin carga disponible para el vertedero')));
+        });
+        lines.push('  Interior: ' + fmt(ent.B) + ' m de ancho × ' + fmt(ent.L) + ' m de largo; fondo ' + fmt(ent.fondo) + ' m, tapa ' + fmt(ent.tapa) + ' m, altura ' + fmt(ent.H) + ' m; borde libre a Qmax = ' + fmt(ent.bl) + ' m');
+        lines.push('Cámara de salida (' + DESCR.camS[v.camS].t + '): ' + fmt(sal.B) + ' × ' + fmt(sal.L) + ' m; fondo ' + fmt(sal.fondo) + ' m, tapa ' + fmt(sal.tapa) + ' m, altura ' + fmt(sal.H) + ' m; borde libre = ' + fmt(sal.bl) + ' m');
+        lines.push('Criterios: holgura de 0,15 m a cada lado del conducto y 0,60 m mínimo para limpieza; largo ≥ 1,50 m y ≥ longitud del vertedero + 0,50 m.');
+        return { value: fmt(ent.B) + ' × ' + fmt(ent.L) + ' m (entrada)', lines: lines };
+      }
+    },
+    {
       id: 'perfil', title: 'Perfil y cotas', inputs: ['Ld', 'Lc', 'La'], deps: ['niveles'], src: 'Guía AA-PF-01 Tabla 1 (perfil y cotas)',
       run: function (v, c) {
         var x0 = 0, x1 = v.Ld, x2 = x1 + v.Lc, x3 = x2 + v.La;
@@ -1348,15 +1538,17 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     else { f = colebrook(Re, Dm, v.ks / 1000); hf = f * (L / Dm) * g2; }
     return { V: V, g2: g2, hf: hf, hm: K * g2, f: f, Re: Re };
   }
-  function alturaSistema(Qt, Hs, v, c) {
-    var s = perdidaTubo(Qt / v.nAct, v.Dsu / 1000, v.Lsu, v.Ksu, v, c.w.nu);
+  function alturaSistema(Qt, Hs, v, c, nP) {
+    var s = perdidaTubo(Qt / (nP || v.nAct), v.Dsu / 1000, v.Lsu, v.Ksu, v, c.w.nu);
     var i = perdidaTubo(Qt, v.Dim / 1000, v.Lim, v.Kim, v, c.w.nu);
     return { H: Hs + s.hf + s.hm + i.hf + i.hm + i.g2, Hs: Hs, s: s, i: i, Hf: s.hf + i.hf, Hl: s.hm + i.hm, Hv: i.g2 };
   }
-  function puntoOperacion(Hs, v, c) {
+  /* Punto de operación con nP bombas en paralelo y nS en serie por línea; r = velocidad relativa (variador). */
+  function puntoOperacion(Hs, v, c, nP, nS, r) {
+    nP = nP || v.nAct; nS = nS || v.nSer || 1; r = r || 1;
     var A = c.fit.A, B = c.fit.B, C = c.fit.C;
-    var Hp = function (Qp) { return A * Qp * Qp + B * Qp + C; };
-    var Qt = function (Qpu) { return alturaSistema(Qpu * v.nAct / 1000, Hs, v, c).H; };
+    var Hp = function (Qp) { return nS * (A * Qp * Qp + B * r * Qp + C * r * r); };
+    var Qt = function (Qpu) { return alturaSistema(Qpu * nP / 1000, Hs, v, c, nP).H; };
     if (Hp(0) <= Hs) return null;
     var maxQ = c.curva[c.curva.length - 1].Q * 3 || 1, N = 800, prev = 0, ant = Hp(0) - Qt(0);
     for (var i = 1; i <= N; i++) {
@@ -1365,11 +1557,55 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         var lo = prev, hi = q;
         for (var j = 0; j < 60; j++) { var m = (lo + hi) / 2; if (Hp(m) - Qt(m) > 0) lo = m; else hi = m; }
         var qp = (lo + hi) / 2;
-        return { Qp: qp, Qt: qp * v.nAct, H: Hp(qp) };
+        return { Qp: qp, Qt: qp * nP, H: Hp(qp), Hb: Hp(qp) / nS, nP: nP, nS: nS };
       }
       prev = q; ant = d;
     }
     return null;
+  }
+  /* Velocidad relativa del variador para que el punto de operación caiga en Qd (leyes de afinidad). */
+  function velocidadParaQd(v, c, nP, nS) {
+    var Qp = v.Qd / nP, Hreq = alturaSistema(v.Qd / 1000, c.HsMax, v, c, nP).H / nS;
+    var a = c.fit.C, b = c.fit.B * Qp, cc = c.fit.A * Qp * Qp - Hreq;
+    var disc = b * b - 4 * a * cc;
+    if (a <= 0 || disc < 0) return null;
+    var r = (-b + Math.sqrt(disc)) / (2 * a);
+    return r > 0 ? { r: r, Hz: 60 * r, Hreq: Hreq } : null;
+  }
+  function arregloTxt(nP, nS) {
+    if (nS === 1) return nP === 1 ? 'una sola bomba' : nP + ' bombas en paralelo';
+    if (nP === 1) return nS + ' bombas en serie';
+    return nP + ' líneas en paralelo, cada una con ' + nS + ' bombas en serie';
+  }
+  function alternativasBombas(v, c) {
+    var out = [];
+    for (var nS = 1; nS <= 3; nS++) {
+      for (var nP = 1; nP <= 4; nP++) {
+        if (nP * nS > 6) continue;
+        var op = puntoOperacion(c.HsMax, v, c, nP, nS), o = { nP: nP, nS: nS, total: nP * nS, op: op, actual: nP === v.nAct && nS === (v.nSer || 1) };
+        if (op) {
+          o.eta = interpCol(c.curva, 'eta', op.Qp);
+          o.desv = (op.Qt - v.Qd) / v.Qd;
+          o.dentro = op.Qp <= c.qMaxCurva;
+          o.etaOk = o.eta >= 0.9 * c.etaMax;
+          o.apta = op.Qt >= v.Qd && o.dentro;
+          o.optima = o.apta && o.desv <= 0.10 && o.etaOk;
+          o.vfd = o.apta && o.desv > 0.10 ? velocidadParaQd(v, c, nP, nS) : null;
+          if (o.vfd && (o.vfd.Hz < 40 || o.vfd.r > 1)) o.vfd = null;
+          o.nota = !o.dentro ? 'Fuera de la curva' : (op.Qt < v.Qd ? 'No alcanza Qd' : (o.optima ? 'Cerca de Qd y buena eficiencia' : (o.desv > 0.10 ? (o.vfd ? 'Se ajusta con variador a ' + fmt(o.vfd.Hz, 1) + ' Hz' : 'Supera Qd en ' + fmt(o.desv * 100, 0) + ' %') : 'Eficiencia baja')));
+        } else o.nota = 'Las curvas no se cruzan';
+        out.push(o);
+      }
+    }
+    var score = function (o) {
+      if (!o.op) return 1e6 + o.total;
+      var s = 0;
+      if (!o.apta) s += 1e4 + Math.max(0, -o.desv) * 1e3;
+      if (!o.optima) s += (o.vfd ? 50 : 200) + Math.abs(o.desv) * 100 + (o.etaOk ? 0 : 100);
+      return s + o.total * 10 + o.nS;
+    };
+    out.sort(function (a, b) { return score(a) - score(b); });
+    return out;
   }
 
   var STEPS_BOMBA = [
@@ -1382,12 +1618,14 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       }
     },
     {
-      id: 'estatica', title: 'Altura estática', inputs: ['Znmin', 'Znmax', 'Zdis'], deps: [], src: 'RAS B.8.5.2, Ec. B.8.1, p. 356; HEC-22 §12.1.3.1, p. 252',
+      id: 'estatica', title: 'Altura estática', inputs: ['Znmin', 'Znmax', 'Zdis', 'descarga', 'Zimp'], deps: [], src: 'RAS B.8.5.2, Ec. B.8.1, p. 356; HEC-22 §12.1.3.1, p. 252',
       run: function (v, c) {
         if (v.Znmax < v.Znmin) throw calcError('El nivel máximo del pozo (' + fmt(v.Znmax) + ' m) está por debajo del mínimo (' + fmt(v.Znmin) + ' m).', 'Corrija los niveles: el máximo debe ser mayor o igual al mínimo.');
-        c.HsMax = v.Zdis - v.Znmin; c.HsMin = v.Zdis - v.Znmax;
+        var libre = v.descarga === 'libre' && v.Zimp > v.Zdis;
+        c.Zsup = libre ? v.Zimp : v.Zdis;
+        c.HsMax = c.Zsup - v.Znmin; c.HsMin = c.Zsup - v.Znmax;
         if (c.HsMax <= 0) throw calcError('El nivel de descarga no está por encima del pozo: Hs = ' + fmt(c.HsMax) + ' m. Ese sistema no necesita bombeo.', 'Revise las cotas o considere solución por gravedad (HEC-22 cap. 12, p. 249).');
-        return { value: 'Hs = ' + fmt(c.HsMin) + ' a ' + fmt(c.HsMax) + ' m', lines: ['Hs máx = ' + fmt(v.Zdis) + ' − ' + fmt(v.Znmin) + ' = ' + fmt(c.HsMax) + ' m (condición más desfavorable)', 'Hs mín = ' + fmt(v.Zdis) + ' − ' + fmt(v.Znmax) + ' = ' + fmt(c.HsMin) + ' m'] };
+        return { value: 'Hs = ' + fmt(c.HsMin) + ' a ' + fmt(c.HsMax) + ' m', lines: [(libre ? 'Descarga libre: se mide hasta el eje de la salida, cota ' + fmt(v.Zimp) + ' m' : 'Descarga ahogada: se mide hasta el nivel de agua, cota ' + fmt(v.Zdis) + ' m'), 'Hs máx = ' + fmt(c.Zsup) + ' − ' + fmt(v.Znmin) + ' = ' + fmt(c.HsMax) + ' m (nivel mínimo en succión, condición más desfavorable)', 'Hs mín = ' + fmt(c.Zsup) + ' − ' + fmt(v.Znmax) + ' = ' + fmt(c.HsMin) + ' m'] };
       }
     },
     {
@@ -1407,20 +1645,68 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       }
     },
     {
-      id: 'sistema', title: 'Curva del sistema', inputs: ['Dsu', 'Lsu', 'Ksu', 'Dim', 'Lim', 'Kim', 'fric', 'ks', 'C', 'nAct', 'Qd'], deps: ['agua', 'estatica'], src: 'HEC-22 Ec. 12.1, p. 252; RAS Ec. B.8.1, p. 356 y B.6.9 a B.6.13',
+      id: 'accesorios', title: 'Accesorios y pérdidas menores', inputs: ['kmodo', 'accSu', 'accIm', 'Ksu', 'Kim'], deps: [], src: 'HEC-22 Ec. 12.1, p. 252 (Hl = ΣK·V²/2g); coeficientes K usuales, editables',
+      run: function (v, c) {
+        if (v.kmodo === 'manual') {
+          c.acc = { su: { items: [], sum: v.Ksu }, im: { items: [], sum: v.Kim }, manual: true };
+          return { value: 'ΣK succión = ' + fmt(v.Ksu) + '; impulsión = ' + fmt(v.Kim), lines: ['Valores escritos por el usuario: ΣK succión = ' + fmt(v.Ksu) + ' (por bomba); ΣK impulsión = ' + fmt(v.Kim) + '. La salida al tanque se suma aparte como Hv = V²/2g.'] };
+        }
+        var su = parseAcc(v.accSu), im = parseAcc(v.accIm);
+        var errs = su.errs.concat(im.errs);
+        if (errs.length) throw calcError(errs[0], 'Revise la tabla de accesorios: cantidades enteras y K positivos.');
+        v.Ksu = su.sum; v.Kim = im.sum;
+        c.acc = { su: su, im: im };
+        var ls = ['Succión (una por bomba):'];
+        su.items.forEach(function (a) { ls.push('  ' + a.n + ' × ' + a.t + ' (K = ' + fmt(a.K) + ') = ' + fmt(a.nK)); });
+        ls.push('  ΣK succión = ' + fmt(su.sum));
+        ls.push('Impulsión (común):');
+        im.items.forEach(function (a) { ls.push('  ' + a.n + ' × ' + a.t + ' (K = ' + fmt(a.K) + ') = ' + fmt(a.nK)); });
+        ls.push('  ΣK impulsión = ' + fmt(im.sum) + '; la salida al tanque (K = 1,0) se suma como Hv = V²/2g');
+        return { value: 'ΣK succión = ' + fmt(su.sum) + '; impulsión = ' + fmt(im.sum), lines: ls };
+      }
+    },
+    {
+      id: 'sistema', title: 'Curva del sistema', inputs: ['Dsu', 'Lsu', 'Dim', 'Lim', 'fric', 'ks', 'C', 'nAct', 'Qd'], deps: ['agua', 'estatica', 'accesorios'], src: 'HEC-22 Ec. 12.1, p. 252; RAS Ec. B.8.1, p. 356 y B.6.9 a B.6.13',
       run: function (v, c) {
         c.sis = alturaSistema(v.Qd / 1000, c.HsMax, v, c);
         return { value: 'TDH(' + fmt(v.Qd, 0) + ' L/s) = ' + fmt(c.sis.H) + ' m', lines: ['Con Q = ' + fmt(v.Qd, 1) + ' L/s y Hs máx: Vs = ' + fmt(c.sis.s.V) + ' m/s, Vi = ' + fmt(c.sis.i.V) + ' m/s', 'TDH = Hs + Hf + Hv + Hl = ' + fmt(c.HsMax) + ' + ' + fmt(c.sis.Hf, 3) + ' + ' + fmt(c.sis.Hv, 3) + ' + ' + fmt(c.sis.Hl, 3) + ' = ' + fmt(c.sis.H) + ' m'] };
       }
     },
     {
-      id: 'operacion', title: 'Punto de operación', inputs: ['nAct'], deps: ['curva', 'sistema'], src: 'HEC-22 §12.1.3, Fig. 12.1, p. 252-253; Guía AA-PF-01 Tabla 1',
+      id: 'operacion', title: 'Punto de operación', inputs: ['nAct', 'nSer'], deps: ['curva', 'sistema'], src: 'HEC-22 §12.1.3, Fig. 12.1, p. 252-253; Guía AA-PF-01 Tabla 1',
       run: function (v, c) {
         c.op = puntoOperacion(c.HsMax, v, c);
-        if (!c.op) throw calcError('La bomba no vence al sistema: su altura a caudal cero (' + fmt(c.fit.C) + ' m) no alcanza ' + fmt(c.HsMax) + ' m de altura estática, o las curvas no se cruzan.', 'Elija una bomba de mayor altura, ponga bombas en serie o reduzca la altura estática.');
+        var conf = v.nAct + ' en paralelo' + (v.nSer > 1 ? ' × ' + v.nSer + ' en serie' : '');
+        if (!c.op) throw calcError('Con ' + conf + ' la bomba no vence al sistema: su altura a caudal cero (' + fmt(c.fit.C * v.nSer) + ' m) no alcanza ' + fmt(c.HsMax) + ' m de altura estática, o las curvas no se cruzan.', 'Vea "¿Hacen falta más bombas?" en Resultados: allí se comparan arreglos en serie y en paralelo y se puede aplicar el recomendado.');
         c.opLow = puntoOperacion(c.HsMin, v, c);
         c.opSis = alturaSistema(c.op.Qt / 1000, c.HsMax, v, c);
-        return { value: 'Q = ' + fmt(c.op.Qt, 1) + ' L/s; H = ' + fmt(c.op.H) + ' m', lines: ['Intersección de H_bomba(Q/' + v.nAct + ') con H_sistema(Q), nivel mínimo: Q = ' + fmt(c.op.Qt, 2) + ' L/s, H = ' + fmt(c.op.H, 2) + ' m', 'Con nivel máximo: Q = ' + (c.opLow ? fmt(c.opLow.Qt, 2) + ' L/s, H = ' + fmt(c.opLow.H, 2) + ' m' : 'sin cruce')] };
+        var ls = ['Bomba equivalente: H(Q) = ' + v.nSer + '·H₁(Q/' + v.nAct + ')  (' + conf + '; en paralelo se suman caudales, en serie alturas)',
+          'Intersección con H_sistema(Q), nivel mínimo: Q = ' + fmt(c.op.Qt, 2) + ' L/s, H = ' + fmt(c.op.H, 2) + ' m (' + fmt(c.op.Qp, 2) + ' L/s y ' + fmt(c.op.Hb, 2) + ' m por bomba)',
+          'Con nivel máximo: Q = ' + (c.opLow ? fmt(c.opLow.Qt, 2) + ' L/s, H = ' + fmt(c.opLow.H, 2) + ' m' : 'sin cruce'),
+          'Frente al caudal de diseño: ' + fmt(c.op.Qt, 1) + ' / ' + fmt(v.Qd, 1) + ' L/s = ' + fmt(c.op.Qt / v.Qd * 100, 0) + ' %'];
+        return { value: 'Q = ' + fmt(c.op.Qt, 1) + ' L/s; H = ' + fmt(c.op.H) + ' m', lines: ls };
+      }
+    },
+    {
+      id: 'arreglo', title: 'Bombas en serie o en paralelo', inputs: ['nAct', 'nSer', 'Qd'], deps: ['curva', 'sistema'], src: 'HEC-22 §12.1.3 y §12.1.4, p. 252-253; leyes de afinidad para el variador (Res. 0330/2017 Art. 161 num. 5)',
+      run: function (v, c) {
+        var alt = alternativasBombas(v, c), best = alt[0], cur = alt.filter(function (o) { return o.actual; })[0];
+        c.alt = alt; c.altBest = best; c.altCur = cur;
+        var ls = [];
+        ls.push('Una bomba a caudal cero da ' + fmt(c.fit.C) + ' m; altura estática = ' + fmt(c.HsMax) + ' m; altura del sistema a Qd = ' + fmt(c.sis.H) + ' m');
+        if (c.fit.C <= c.HsMax) ls.push('Una bomba no vence la altura estática: hay que ponerlas en SERIE para sumar altura.');
+        else if (!cur || !cur.op || cur.op.Qt < v.Qd) ls.push('La bomba vence la altura pero no entrega Qd: en PARALELO se suma caudal; en serie se suma altura cuando el sistema a Qd pide más de lo que da una bomba.');
+        ls.push('Se compararon ' + alt.length + ' arreglos de bombas iguales (hasta 4 en paralelo y 3 en serie, máximo 6 en operación):');
+        alt.slice(0, 6).forEach(function (o) {
+          ls.push((o === best ? '→ ' : '  ') + o.nP + ' en paralelo × ' + o.nS + ' en serie: ' + (o.op ? 'Q = ' + fmt(o.op.Qt, 1) + ' L/s, H = ' + fmt(o.op.H) + ' m, η = ' + fmt(o.eta, 1) + ' %' : 'sin cruce') + ' · ' + o.nota);
+        });
+        var txt;
+        if (cur && cur.optima) txt = 'La configuración actual (' + cur.nP + ' en paralelo × ' + cur.nS + ' en serie) sirve: no hace falta añadir bombas.';
+        else if (best && best.apta) txt = 'Se recomienda ' + arregloTxt(best.nP, best.nS) + ': ' + best.total + ' en operación más la de reserva.' + (best.vfd ? ' Con variador a ' + fmt(best.vfd.Hz, 1) + ' Hz el caudal baja a Qd.' : '');
+        else txt = 'Ningún arreglo de hasta 6 bombas iguales entrega Qd con esta curva: cambie de bomba o reduzca las pérdidas.';
+        c.altTxt = txt;
+        ls.push(txt);
+        return { value: cur && cur.optima ? 'La actual sirve' : (best && best.apta ? best.nP + ' en paralelo × ' + best.nS + ' en serie' : 'Cambiar de bomba'), lines: ls };
       }
     },
     {
@@ -1429,10 +1715,10 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         var eta = interpCol(c.curva, 'eta', c.op.Qp);
         if (eta <= 0) throw calcError('La eficiencia interpolada en el punto de operación es 0 %.', 'Revise la columna η de la curva de la bomba.');
         var Q = c.op.Qp / 1000;
-        var Ph = c.w.gamma * Q * c.op.H;
+        var Ph = c.w.gamma * Q * c.op.Hb;
         var Pe = Ph / (eta / 100), Pm = Pe / (v.etaM / 100);
-        c.pot = { eta: eta, Ph: Ph / 1000, Pe: Pe / 1000, Pm: Pm / 1000, etaConj: eta * v.etaM / 100, E24: Pm / 1000 * v.nAct * 24 };
-        return { value: 'P = ' + fmt(c.pot.Pe) + ' kW por bomba; η = ' + fmt(eta, 1) + ' %', lines: ['η(' + fmt(c.op.Qp, 1) + ' L/s) = ' + fmt(eta, 1) + ' % (interpolación lineal en la curva)', 'P hidráulica = γQH = ' + fmt(c.w.gamma, 0) + '·' + fmt(Q, 4) + '·' + fmt(c.op.H) + ' = ' + fmt(c.pot.Ph) + ' kW', 'P al eje = Ph/η = ' + fmt(c.pot.Pe) + ' kW;  P eléctrica = Pe/ηm = ' + fmt(c.pot.Pm) + ' kW', 'η conjunto = ' + fmt(eta, 1) + ' % × ' + fmt(v.etaM, 1) + ' % = ' + fmt(c.pot.etaConj, 1) + ' %'] };
+        c.pot = { eta: eta, Ph: Ph / 1000, Pe: Pe / 1000, Pm: Pm / 1000, etaConj: eta * v.etaM / 100, E24: Pm / 1000 * v.nAct * v.nSer * 24 };
+        return { value: 'P = ' + fmt(c.pot.Pe) + ' kW por bomba; η = ' + fmt(eta, 1) + ' %', lines: ['η(' + fmt(c.op.Qp, 1) + ' L/s) = ' + fmt(eta, 1) + ' % (interpolación lineal en la curva)', 'P hidráulica por bomba = γ·Q·H = ' + fmt(c.w.gamma, 0) + '·' + fmt(Q, 4) + '·' + fmt(c.op.Hb) + ' = ' + fmt(c.pot.Ph) + ' kW', 'P al eje = Ph/η = ' + fmt(c.pot.Pe) + ' kW;  P eléctrica = Pe/ηm = ' + fmt(c.pot.Pm) + ' kW', 'η conjunto = ' + fmt(eta, 1) + ' % × ' + fmt(v.etaM, 1) + ' % = ' + fmt(c.pot.etaConj, 1) + ' %'] };
       }
     },
     {
@@ -1495,6 +1781,20 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         var ciclo = 4 * Vol / unaBomba / 60;
         c.pozo = { Vol: Vol, Vreq: Vreq, tRet: tRet, Vent: Vent, ciclo: ciclo, arr: 60 / ciclo };
         return { value: 'V útil = ' + fmt(Vol) + ' m³ (mín. ' + fmt(Vreq) + ' m³)', lines: ['V útil = ' + fmt(v.LB) + '·' + fmt(v.BB) + '·(' + fmt(v.Znmax) + ' − ' + fmt(v.Znmin) + ') = ' + fmt(Vol) + ' m³', 'V mínimo = 2,5·Q(m³/min) = 2,5·' + fmt(Qbmin) + ' = ' + fmt(Vreq) + ' m³', 'Retención = V/Qd = ' + fmt(tRet) + ' min;  V llegada = ' + fmt(Vent) + ' m/s', 'Ciclo mínimo (entrada = Qb/2) = 4V/Qb = ' + fmt(ciclo) + ' min → ' + fmt(c.pozo.arr, 1) + ' arranques/h'] };
+      }
+    },
+    {
+      id: 'tanque', title: 'Tanque de descarga', inputs: ['tanque', 'descarga', 'Zdis', 'Zimp', 'Ltq', 'Btq', 'Zftq', 'Dim'], deps: ['estatica'], src: 'HEC-22 Ec. 12.1, p. 252 (pérdida de salida Hv); dimensiones por criterio de diseño del grupo',
+      run: function (v, c) {
+        var t = DESCR.tanque[v.tanque], d = DESCR.descarga[v.descarga];
+        var lam = v.Zdis - v.Zftq, sobre = v.Zimp - v.Dim / 2000 - v.Zftq;
+        c.tq = { t: t.t, d: t.d, dd: d.d, lam: lam, sobre: sobre, Vol: v.Ltq * v.Btq * lam, clave: v.Zimp + v.Dim / 2000, batea: v.Zimp - v.Dim / 2000 };
+        return {
+          value: t.t + ', ' + fmt(v.Ltq, 1) + ' × ' + fmt(v.Btq, 1) + ' m',
+          lines: [t.t + ': ' + t.d, d.t + ': ' + d.d,
+            'Salida de la impulsión: eje ' + fmt(v.Zimp) + ' m (batea ' + fmt(c.tq.batea) + ', clave ' + fmt(c.tq.clave) + ' m); nivel de agua ' + fmt(v.Zdis) + ' m; fondo ' + fmt(v.Zftq) + ' m',
+            'Lámina de agua = ' + fmt(v.Zdis) + ' − ' + fmt(v.Zftq) + ' = ' + fmt(lam) + ' m; volumen = ' + fmt(v.Ltq, 1) + '·' + fmt(v.Btq, 1) + '·' + fmt(lam) + ' = ' + fmt(c.tq.Vol) + ' m³']
+        };
       }
     }
   ];
@@ -1596,16 +1896,25 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     { id: 'S15', mod: 'sifon', param: 'Diámetro mínimo en guía técnica', limite: '≥ 200 mm sanitario; ≥ 300 mm pluvial o combinado', fuente: 'RAS D.7.8.2, p. 186. La Res. 0330 (posterior y obligatoria) fija 170 y 280 mm', cond: 'D < mínimo de la guía', sug: 'La Res. 0330 lo permite, pero la guía técnica recomienda un diámetro mayor.', nivel: 'rec', deps: ['conductos', 'lim'],
       ev: function (v, c) { return c.bs.map(function (b) { return { value: 'Conducto ' + b.id + ': ' + fmt(b.D, 0) + ' mm', limit: '≥ ' + c.lim.DminRas + ' mm', ok: b.D >= c.lim.DminRas, sug: 'Considere subir a ' + c.lim.DminRas + ' mm: la Res. 0330 admite ' + c.lim.Dmin + ' mm, pero la guía RAS pide más por riesgo de taponamiento.' }; }); } },
 
-    { id: 'S16', mod: 'sifon', param: 'Paso bajo el obstáculo', limite: 'Clave del tramo inferior ≤ fondo del obstáculo', fuente: 'Condición física del trazado. Las distancias mínimas a otras redes están en RAS D.2.7.4, que debe consultar el diseñador', cond: 'La clave queda por encima del fondo', sug: 'Baje la cota del tramo inferior.', nivel: 'rec', deps: ['conductos', 'geom'], inputs: ['Zobs', 'Zf'],
+    { id: 'S16', mod: 'sifon', param: 'Paso bajo el obstáculo', limite: 'Clave del tramo inferior + recubrimiento ≤ fondo del obstáculo', fuente: 'Condición física del trazado; recubrimiento por criterio de diseño según el tipo de obstáculo. Distancias a otras redes: RAS D.2.7.4', cond: 'Recubrimiento menor al adoptado', sug: 'Baje la cota del tramo inferior.', nivel: 'rec', deps: ['conductos', 'geom', 'obstaculo'], inputs: ['Zobs', 'Zf'],
       ev: function (v, c) {
-        var m = Math.max.apply(null, c.bs.map(function (b) { return b.D / 1000; })), cl = v.Zf + m;
-        return [{ value: 'Clave ' + fmt(cl) + ' m; fondo ' + fmt(v.Zobs) + ' m', ok: cl <= v.Zobs, sug: 'Baje el tramo inferior al menos ' + fmt(cl - v.Zobs) + ' m (a cota ' + fmt(v.Zobs - m) + ' m) para pasar bajo el obstáculo; sume el recubrimiento que exija la entidad.' }];
+        var m = Math.max.apply(null, c.bs.map(function (b) { return b.D / 1000; })), cl = v.Zf + m, rc = v.Zobs - cl;
+        return [{ value: 'Clave ' + fmt(cl) + ' m; fondo ' + fmt(v.Zobs) + ' m; recubrimiento ' + fmt(rc) + ' m', limit: '≥ ' + fmt(v.recub) + ' m (' + c.obs.t + ')', ok: rc >= v.recub - 1e-9, sug: 'Baje el tramo inferior ' + fmt(v.recub - rc) + ' m (a cota ' + fmt(v.Zobs - v.recub - m) + ' m) para dejar ' + fmt(v.recub) + ' m de recubrimiento bajo el ' + c.obs.t.toLowerCase() + '.' }];
+      } },
+    { id: 'S17', mod: 'sifon', param: 'Longitud del tramo inferior frente al obstáculo', limite: 'Lc ≥ ancho del obstáculo', fuente: 'Condición física del trazado (criterio de diseño)', cond: 'Lc menor que el ancho', sug: 'Alargue el tramo inferior.', nivel: 'rec', deps: ['obstaculo'], inputs: ['Lc'],
+      ev: function (v) { return [{ value: 'Lc = ' + fmt(v.Lc, 1) + ' m; ancho = ' + fmt(v.Bobs, 1) + ' m', ok: v.Lc >= v.Bobs, sug: 'Alargue el tramo inferior a por lo menos ' + fmt(v.Bobs + 2, 1) + ' m (ancho + 1 m a cada lado) para que los tramos inclinados no queden dentro del obstáculo.' }]; } },
+    { id: 'S18', mod: 'sifon', param: 'Borde libre en las cámaras', limite: 'Tapa − nivel a Qmax ≥ 0,30 m', fuente: 'Criterio de diseño del grupo. Res. 0330/2017 Art. 158 num. 6 exige estructuras de conexión al inicio y al final', cond: 'Borde libre menor a 0,30 m', sug: 'Suba la tapa o revise los niveles.', nivel: 'rec', deps: ['camaras'],
+      ev: function (v, c) {
+        return [['entrada', c.cam.ent, 'Ztce'], ['salida', c.cam.sal, 'Ztcs']].map(function (x) {
+          return { value: 'Cámara de ' + x[0] + ': ' + fmt(x[1].bl) + ' m', ok: x[1].bl >= 0.3, sug: 'Suba la tapa de la cámara de ' + x[0] + ' a por lo menos ' + fmt(x[1].NA + 0.3) + ' m: con Qmax el agua llega a ' + fmt(x[1].NA, 3) + ' m.' };
+        });
       } },
 
     /* --- Bombeo --- */
     { id: 'B1', mod: 'bomba', param: 'Número mínimo de bombas', limite: '≥ 2 instaladas, con al menos una en reserva', fuente: 'Res. 0330/2017 Art. 78 y Art. 161 num. 1. También HEC-22 §12.1.4, p. 253', cond: 'Menos de 2 bombas o sin reserva', sug: 'Instale una bomba adicional de las mismas características.', nivel: 'norma', deps: [], inputs: ['nInst', 'nAct'],
       ev: function (v) {
-        return [{ value: v.nInst + ' instalada(s), ' + v.nAct + ' en operación', ok: v.nInst >= 2 && v.nInst - v.nAct >= 1, sug: v.nAct > v.nInst ? 'Hay más bombas en operación que instaladas: corrija los datos.' : 'Instale ' + (Math.max(2, v.nAct + 1) - v.nInst) + ' bomba(s) más: siempre debe quedar una de reserva con las mismas características.' }];
+        var op = v.nAct * (v.nSer || 1);
+        return [{ value: v.nInst + ' instalada(s), ' + op + ' en operación', ok: v.nInst >= 2 && v.nInst - op >= 1, sug: op > v.nInst ? 'Hay más bombas en operación (' + op + ') que instaladas: instale ' + (op + 1 - v.nInst) + ' más, contando la de reserva.' : 'Instale ' + (Math.max(2, op + 1) - v.nInst) + ' bomba(s) más: siempre debe quedar una de reserva con las mismas características.' }];
       } },
     { id: 'B2', mod: 'bomba', param: 'Capacidad frente al caudal de diseño', limite: 'Q operación ≥ Q diseño', fuente: 'Res. 0330/2017 Art. 78 y Art. 161 num. 1', cond: 'Q operación < Q diseño', sug: 'Use una bomba mayor o reduzca las pérdidas.', nivel: 'norma', deps: ['operacion'], inputs: ['Qd'],
       ev: function (v, c) { return [{ value: fmt(c.op.Qt, 1) + ' L/s frente a ' + fmt(v.Qd, 1) + ' L/s', ok: c.op.Qt >= v.Qd, sug: 'Faltan ' + fmt(v.Qd - c.op.Qt, 1) + ' L/s: elija una bomba con más altura a ' + fmt(v.Qd / v.nAct, 0) + ' L/s (necesita ' + fmt(c.sis.H) + ' m) o aumente el diámetro de impulsión.' }]; } },
@@ -1643,7 +1952,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     { id: 'B9', mod: 'bomba', param: 'Sumergencia', limite: 'Alcantarillado: S ≥ 2,5·Ds. Acueducto: S > 2·Ds y ≥ 0,50 m', fuente: 'Res. 0330/2017 Art. 161 num. 7; RAS B.8.4.7.2, p. 352', cond: 'S menor que el mínimo', sug: 'Baje la boca de succión o suba el nivel mínimo.', nivel: 'norma', deps: ['sumergencia'], inputs: ['sistema'],
       ev: function (v, c) {
         var S = c.sum.S;
-        if (v.sistema === 'alcantarillado') return [{ value: 'S = ' + fmt(S) + ' m', limit: '≥ ' + fmt(c.sum.req25) + ' m (2,5·Ds)', ok: S >= c.sum.req25, sug: 'Baje la boca de succión ' + fmt(c.sum.req25 - S) + ' m (a cota ' + fmt(v.Zboca - (c.sum.req25 - S)) + ' m) o suba el nivel mínimo a ' + fmt(v.Zboca + c.sum.req25) + ' m. Evita vórtices y entrada de aire.' }];
+        if (v.sistema === 'alcantarillado') return [{ value: 'S = ' + fmt(S) + ' m', limit: '≥ ' + fmt(c.sum.req25) + ' m (2,5·Ds)', ok: S >= c.sum.req25 - 1e-9, sug: 'Baje la boca de succión ' + fmt(c.sum.req25 - S) + ' m (a cota ' + fmt(v.Zboca - (c.sum.req25 - S)) + ' m) o suba el nivel mínimo a ' + fmt(v.Zboca + c.sum.req25) + ' m. Evita vórtices y entrada de aire.' }];
         var r = Math.max(c.sum.req2, 0.5);
         return [{ value: 'S = ' + fmt(S) + ' m', limit: '> ' + fmt(r) + ' m', ok: S > c.sum.req2 && S >= 0.5, sug: 'Baje la boca de succión ' + fmt(r - S) + ' m o suba el nivel mínimo. Evita vórtices y entrada de aire.' }];
       } },
@@ -1705,7 +2014,25 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     { id: 'B22', mod: 'bomba', param: 'Respaldo energético', limite: '≥ 12 horas de operación continua', fuente: 'Res. 0330/2017 Art. 161 num. 10', cond: 'Sin respaldo', sug: 'Incluya planta eléctrica o doble alimentación.', nivel: 'norma', sistema: 'alcantarillado', deps: [], inputs: ['sistema', 'respaldo'],
       ev: function (v) { if (v.sistema !== 'alcantarillado') return null; return [{ value: v.respaldo === 'si' ? 'Sí' : 'No', ok: v.respaldo === 'si', sug: 'Incluya respaldo (planta eléctrica o doble alimentación) para 12 h continuas.' }]; } },
     { id: 'B23', mod: 'bomba', param: 'Punto de operación dentro de la curva', limite: 'Q por bomba dentro del rango de la curva suministrada', fuente: 'Validez física del ajuste. RAS B.8.5.3.3, p. 357', cond: 'Extrapolación de la curva', sug: 'Pida al fabricante datos en ese rango.', nivel: 'rec', deps: ['operacion'],
-      ev: function (v, c) { return [{ value: fmt(c.op.Qp, 1) + ' L/s por bomba (curva hasta ' + fmt(c.qMaxCurva, 0) + ' L/s)', ok: c.op.Qp <= c.qMaxCurva, sug: 'El resultado es una extrapolación: pida al fabricante puntos hasta ' + fmt(c.op.Qp * 1.2, 0) + ' L/s.' }]; } }
+      ev: function (v, c) { return [{ value: fmt(c.op.Qp, 1) + ' L/s por bomba (curva hasta ' + fmt(c.qMaxCurva, 0) + ' L/s)', ok: c.op.Qp <= c.qMaxCurva, sug: 'El resultado es una extrapolación: pida al fabricante puntos hasta ' + fmt(c.op.Qp * 1.2, 0) + ' L/s.' }]; } },
+    { id: 'B24', mod: 'bomba', param: 'Caudal de operación cercano al de diseño', limite: 'Q operación entre Qd y Qd + 10 %', fuente: 'Criterio del proyecto: el caudal de diseño debe quedar cerca del punto de funcionamiento. Res. 0330/2017 Art. 161 num. 8 pide operar cerca de la máxima eficiencia', cond: 'Q operación > 1,10·Qd o < Qd', sug: 'Ajuste con variador, cambie de bomba o de arreglo.', nivel: 'rec', deps: ['operacion', 'arreglo'], inputs: ['Qd'],
+      ev: function (v, c) {
+        var d = (c.op.Qt - v.Qd) / v.Qd, vf = velocidadParaQd(v, c, v.nAct, v.nSer);
+        var sug = d < 0 ? 'Falta caudal: ' + c.altTxt : (vf && vf.Hz >= 40 ? 'Con el variador a ' + fmt(vf.Hz, 1) + ' Hz (' + fmt(vf.r * 100, 0) + ' % de la velocidad) el punto cae en Qd = ' + fmt(v.Qd, 1) + ' L/s con H = ' + fmt(vf.Hreq * v.nSer) + ' m. ' : 'Ni con el variador a 40 Hz se llega a Qd: ') + (vf && vf.Hz >= 40 ? '' : c.altTxt);
+        return [{ value: fmt(c.op.Qt, 1) + ' L/s frente a ' + fmt(v.Qd, 1) + ' L/s (' + (d >= 0 ? '+' : '') + fmt(d * 100, 0) + ' %)', ok: d >= 0 && d <= 0.10, sug: sug }];
+      } },
+    { id: 'B25', mod: 'bomba', param: 'Posición de la salida en el tanque de descarga', limite: 'Ahogada: clave ≤ nivel − 0,10 m. Libre: batea ≥ nivel + 0,10 m', fuente: 'Validez física del cálculo de Hs (RAS B.8.5.2, Ec. B.8.1, p. 356)', cond: 'La salida no corresponde al tipo de descarga escogido', sug: 'Ajuste la cota de impulsión.', nivel: 'rec', deps: ['tanque'], inputs: ['Zimp', 'descarga'],
+      ev: function (v, c) {
+        if (v.descarga === 'libre') return [{ value: 'Batea de la salida ' + fmt(c.tq.batea) + ' m; nivel ' + fmt(v.Zdis) + ' m', ok: c.tq.batea >= v.Zdis + 0.1, sug: 'Suba la salida a cota de eje ≥ ' + fmt(v.Zdis + 0.1 + v.Dim / 2000) + ' m o cambie a descarga ahogada.' }];
+        return [{ value: 'Clave de la salida ' + fmt(c.tq.clave) + ' m; nivel ' + fmt(v.Zdis) + ' m', ok: c.tq.clave <= v.Zdis - 0.1 && c.tq.batea >= v.Zftq + 0.1, sug: c.tq.batea < v.Zftq + 0.1 ? 'La salida queda bajo el fondo del tanque: baje el fondo a ' + fmt(c.tq.batea - 0.3) + ' m.' : 'Baje la salida a cota de eje ≤ ' + fmt(v.Zdis - 0.1 - v.Dim / 2000) + ' m para que quede ahogada.' }];
+      } },
+    { id: 'B26', mod: 'bomba', param: 'Válvulas en la impulsión de cada bomba', limite: 'Cheque y válvula de cierre en la impulsión', fuente: 'Práctica de diseño: la cheque evita el flujo inverso al parar la bomba y la válvula de cierre permite aislarla. Criterio del grupo', cond: 'Falta la cheque o la válvula de cierre', sug: 'Agregue los accesorios que faltan.', nivel: 'rec', deps: ['accesorios'], inputs: ['kmodo'],
+      ev: function (v, c) {
+        if (c.acc.manual) return null;
+        var ids = c.acc.im.items.map(function (a) { return a.id; });
+        var ch = ids.indexOf('v_cheq') >= 0, ci = ids.indexOf('v_comp') >= 0 || ids.indexOf('v_mari') >= 0;
+        return [{ value: 'Cheque: ' + (ch ? 'sí' : 'no') + '; cierre: ' + (ci ? 'sí' : 'no'), ok: ch && ci, sug: 'Agregue ' + [!ch ? 'una válvula de cheque' : '', !ci ? 'una válvula de compuerta o mariposa' : ''].filter(Boolean).join(' y ') + ' en la impulsión de cada bomba.' }];
+      } }
   ];
 
   function calcError(msg, sug) { var e = new Error(msg); e.calc = true; e.sug = sug; return e; }
@@ -1782,7 +2109,104 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     });
 
     var complete = order.every(function (n) { return n.status === 'ok'; });
-    return { mod: mod, vals: vals, v: v, val: val, ctx: ctx, nodes: nodes, order: order, checks: checks, dataIssues: dataIssues, complete: complete, labelOf: labelOf };
+    var autos = Object.keys(val.auto).map(function (k) { var a = val.auto[k]; return { k: k, label: a.field.label, unit: a.field.unit, v: a.v, how: a.how, src: a.src }; });
+    return { mod: mod, vals: vals, v: v, val: val, ctx: ctx, nodes: nodes, order: order, checks: checks, dataIssues: dataIssues, complete: complete, labelOf: labelOf, autos: autos };
+  }
+
+  /* ---------- Tablas descriptivas (pantalla, PDF y Excel) ---------- */
+  function sifonTablas(res) {
+    var c = res.ctx, v = res.v;
+    if (!c.cam || !c.casos || !c.g) return null;
+    var Dmax = Math.max.apply(null, c.bs.map(function (b) { return b.D / 1000; }));
+    var cotas = [
+      ['Tapa de la cámara de entrada', v.Ztce, res.val.auto.Ztce ? 'Autocompletada' : 'Dato'],
+      ['Nivel de agua en cámara de entrada, Qmax', c.casos[2].NAe, 'Calculado'],
+      ['Nivel de agua en cámara de entrada, Qmed', c.casos[1].NAe, 'Calculado'],
+      ['Nivel de agua en cámara de entrada, Qmin', c.casos[0].NAe, 'Calculado']
+    ];
+    c.cam.ent.comp.forEach(function (k) { if (k.cresta !== null) cotas.push(['Cresta del vertedero del conducto ' + k.id, k.cresta, 'Calculado (entra con ' + (k.id === 2 ? 'Qmed' : 'Qmax') + ')']); });
+    cotas.push(['Batea del colector de llegada', v.Ze, 'Dato']);
+    cotas.push(['Clave de los conductos en la cámara de entrada', v.Zci + Dmax, 'Batea + D mayor']);
+    cotas.push(['Fondo de la cámara de entrada (batea de los conductos)', v.Zci, res.val.auto.Zci ? 'Autocompletada' : 'Dato']);
+    cotas.push(['Superficie del obstáculo (' + DESCR.obst[v.obst].znivel + ')', v.Znivel, 'Dato']);
+    cotas.push(['Fondo del obstáculo (' + DESCR.obst[v.obst].zobs + ')', v.Zobs, 'Dato']);
+    cotas.push(['Clave del tramo inferior', v.Zf + Dmax, 'Recubrimiento ' + fmt(v.Zobs - v.Zf - Dmax) + ' m']);
+    cotas.push(['Batea del tramo inferior (punto más bajo)', v.Zf, res.val.auto.Zf ? 'Autocompletada' : 'Dato']);
+    cotas.push(['Fondo de la cámara de salida (batea de los conductos)', v.Zcs, res.val.auto.Zcs ? 'Autocompletada' : 'Dato']);
+    cotas.push(['Nivel de agua en cámara de salida, Qmax', c.casos[2].NAs, 'Calculado']);
+    cotas.push(['Batea del colector de salida', v.Zs, 'Dato']);
+    cotas.push(['Tapa de la cámara de salida', v.Ztcs, res.val.auto.Ztcs ? 'Autocompletada' : 'Dato']);
+    var pend = [
+      ['Colector de llegada', '—', '—', v.Se, '—', '—'],
+      ['Tramo que baja', v.Ld, c.g.dzB, c.g.pB, c.g.thB, c.g.Lb],
+      ['Tramo inferior', v.Lc, 0, 0, 0, v.Lc],
+      ['Tramo que sube', v.La, c.g.dzS, c.g.pS, c.g.thS, c.g.Ls],
+      ['Colector de salida', '—', '—', v.Ss, '—', '—']
+    ];
+    var funcion = ['Siempre en servicio: lleva Qmin', 'Entra cuando el caudal pasa de Qmin', 'Entra cuando el caudal pasa de Qmed', 'Entra con caudales altos'];
+    var mat = MATERIALS[v.mat];
+    var tubos = c.bs.map(function (b, i) {
+      var D = b.D / 1000;
+      var Qs = c.casos.map(function (o) { return o.barrels[i] ? o.barrels[i].Q * 1000 : 0; });
+      var Vs = c.casos.map(function (o) { return o.barrels[i] ? o.barrels[i].V : 0; });
+      return { id: b.id, D: b.D, mat: mat ? mat.label : 'Otro', A: areaC(D), L: c.g.L, Qs: Qs, Vs: Vs, tope: c.topes ? c.topes[i] : null, bE: v.Zci, bS: v.Zcs, clave: v.Zf + D, fn: v.reparto === 'vert' ? funcion[i] : 'Paralelo libre: reparto por igual pérdida' };
+    });
+    var vertTxt = (c.crestas && c.crestas.length) ? 'Vertederos de cresta delgada en los tabiques, Q = 1,84·L·h^1,5 (Francis). ' + c.crestas.map(function (x) { return 'Conducto ' + x.id + ': cresta ' + fmt(x.cresta, 3) + ' m' + (x.b ? ', L = ' + fmt(x.b) + ' m, h = ' + fmt(x.h, 3) + ' m' : ''); }).join('; ') + '.' : 'Sin vertederos: ' + (c.bs.length < 2 ? 'hay un solo conducto.' : 'el reparto es libre en paralelo.');
+    var desc = [
+      ['Obstáculo', DESCR.obst[v.obst].t, DESCR.obst[v.obst].d + ' Recubrimiento adoptado sobre la clave: ' + fmt(v.recub) + ' m.'],
+      ['Cámara de entrada', DESCR.camE[v.camE].t, DESCR.camE[v.camE].d + ' Interior ' + fmt(c.cam.ent.B) + ' × ' + fmt(c.cam.ent.L) + ' m y ' + fmt(c.cam.ent.H) + ' m de alto. Recibe el colector de llegada Ø' + fmt(v.De, 0) + ' mm a cota ' + fmt(v.Ze) + ' m, con pendiente ' + fmt(v.Se) + ' % y n = ' + fmt(v.ne, 3) + '; de su fondo salen ' + c.bs.length + ' conducto(s): ' + c.bs.map(function (b) { return 'Ø' + fmt(b.D, 0); }).join(', ') + ' mm.'],
+      ['Separadores', DESCR.sep[v.sep].t, DESCR.sep[v.sep].d + ' Espesor ' + fmt(v.esep) + ' m; ' + Math.max(c.bs.length - 1, 0) + ' separador(es) en cada cámara.'],
+      ['Vertederos', v.reparto === 'vert' ? 'Regulación por incrementos' : 'No se usan', vertTxt],
+      ['Cámara de salida', DESCR.camS[v.camS].t, DESCR.camS[v.camS].d + ' Interior ' + fmt(c.cam.sal.B) + ' × ' + fmt(c.cam.sal.L) + ' m; entrega al colector Ø' + fmt(v.Ds, 0) + ' mm a cota ' + fmt(v.Zs) + ' m.'],
+      ['Tubería del sifón', mat ? mat.label : 'Otro material', (mat ? mat.d + ' ' : '') + 'ks = ' + fmt(v.ks, 4) + ' mm, n = ' + fmt(v.n, 3) + '. Sin cambios de diámetro a lo largo de cada conducto (RAS D.7.8.4).'],
+      ['Rejilla', v.rejilla === 'si' ? 'Sí' : 'No', v.rejilla === 'si' ? 'Retiene sólidos antes de los vertederos; obligatoria si D ≤ 760 mm (Art. 158 num. 7).' : 'Sin rejilla: revise la verificación S10.']
+    ];
+    return { cotas: cotas, pend: pend, tubos: tubos, desc: desc };
+  }
+  function bombaTablas(res) {
+    var c = res.ctx, v = res.v;
+    if (!c.acc || !c.sis) return null;
+    var base = c.opSis || c.sis, Qt = c.op ? c.op.Qt : v.Qd;
+    var g2s = base.s.g2, g2i = base.i.g2;
+    var acc = [];
+    c.acc.su.items.forEach(function (a) { acc.push(['Succión', a.t, a.n, a.K, a.nK, a.nK * g2s]); });
+    if (c.acc.manual) acc.push(['Succión', 'ΣK escrito por el usuario', '—', '—', v.Ksu, v.Ksu * g2s]);
+    c.acc.im.items.forEach(function (a) { acc.push(['Impulsión', a.t, a.n, a.K, a.nK, a.nK * g2i]); });
+    if (c.acc.manual) acc.push(['Impulsión', 'ΣK escrito por el usuario', '—', '—', v.Kim, v.Kim * g2i]);
+    acc.push(['Impulsión', 'Salida al tanque (se cuenta como Hv)', 1, 1, 1, g2i]);
+    var alc = v.sistema !== 'acueducto';
+    var tub = [
+      ['Función', 'Lleva el agua del pozo a la bomba. Trabaja con presión baja: se cuida la cavitación (NPSH) y la entrada de aire.', 'Lleva el agua de la bomba al tanque de descarga. Trabaja con presión alta: se cuida el golpe de ariete.'],
+      ['Cantidad', v.nAct * (v.nSer || 1) + ' (una por bomba)', '1 (común a las bombas)'],
+      ['Diámetro interno', fmt(v.Dsu, 0) + ' mm', fmt(v.Dim, 0) + ' mm'],
+      ['Longitud', fmt(v.Lsu, 1) + ' m', fmt(v.Lim, 1) + ' m'],
+      ['Material', MATERIALS[v.mat] ? MATERIALS[v.mat].label : 'Otro', MATERIALS[v.mat] ? MATERIALS[v.mat].label : 'Otro'],
+      ['Caudal', fmt(Qt / v.nAct, 1) + ' L/s por bomba', fmt(Qt, 1) + ' L/s'],
+      ['Velocidad', fmt(base.s.V) + ' m/s', fmt(base.i.V) + ' m/s'],
+      ['Rango de velocidad', alc ? '0,9 a 1,5 m/s (Art. 161.2)' : '0,45 m/s a la máxima de la Tabla B.8.2', alc ? '1,5 a 2,4 m/s (Art. 161.3)' : '1,0 a menos de 6 m/s (B.8.4.8.3)'],
+      ['ΣK de accesorios', fmt(v.Ksu), fmt(v.Kim) + ' + salida 1,0'],
+      ['Pérdida por fricción', fmt(base.s.hf, 3) + ' m', fmt(base.i.hf, 3) + ' m'],
+      ['Pérdida en accesorios', fmt(base.s.hm, 3) + ' m', fmt(base.i.hm + g2i, 3) + ' m'],
+      ['Cota de inicio → fin', fmt(v.Zboca) + ' (boca) → ' + fmt(v.Zeje) + ' m (eje)', fmt(v.Zeje) + ' (eje) → ' + fmt(v.Zimp) + ' m (salida)'],
+      ['Color en el esquema', 'Verde azulado', 'Naranja']
+    ];
+    var cotas = [
+      ['Nivel de agua en la impulsión (descarga)', v.Zdis],
+      ['Cota de impulsión (eje de la salida)', v.Zimp],
+      ['Fondo del tanque de descarga', v.Zftq],
+      ['Nivel máximo de agua en la succión', v.Znmax],
+      ['Nivel mínimo de agua en la succión', v.Znmin],
+      ['Eje de la bomba', v.Zeje],
+      ['Cota de succión (boca)', v.Zboca],
+      ['Fondo del pozo', v.Zfondo]
+    ].map(function (r) { var k = { 'Nivel de agua en la impulsión (descarga)': 'Zdis', 'Cota de impulsión (eje de la salida)': 'Zimp', 'Fondo del tanque de descarga': 'Zftq', 'Nivel máximo de agua en la succión': 'Znmax', 'Nivel mínimo de agua en la succión': 'Znmin', 'Eje de la bomba': 'Zeje', 'Cota de succión (boca)': 'Zboca', 'Fondo del pozo': 'Zfondo' }[r[0]]; return [r[0], r[1], res.val.auto[k] ? 'Autocompletada' : 'Dato']; });
+    var desc = [];
+    if (c.tq) {
+      desc.push(['Tanque de descarga', c.tq.t, c.tq.d + ' Interior ' + fmt(v.Ltq, 1) + ' × ' + fmt(v.Btq, 1) + ' m, lámina ' + fmt(c.tq.lam) + ' m, volumen ' + fmt(c.tq.Vol) + ' m³.']);
+      desc.push(['Salida de la impulsión', DESCR.descarga[v.descarga].t, c.tq.dd]);
+    }
+    desc.push(['Accesorios', c.acc.manual ? 'ΣK escrito' : (c.acc.su.items.length + c.acc.im.items.length) + ' tipos', c.acc.manual ? 'Se usan los ΣK escritos.' : 'Succión: ' + c.acc.su.items.map(function (a) { return a.n + ' ' + a.t.toLowerCase(); }).join(', ') + '. Impulsión: ' + c.acc.im.items.map(function (a) { return a.n + ' ' + a.t.toLowerCase(); }).join(', ') + '.']);
+    return { acc: acc, tub: tub, cotas: cotas, desc: desc };
   }
 
   function summarize(res) {
@@ -1794,17 +2218,22 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
   }
 
   /* ---------- Escenarios precargados ---------- */
+  var SIF_MIN = { T: '', Znivel: '', recub: '', hw: '', ks: '', n: '', esep: '', Ztce: '', Ztcs: '', ne: '', Ds: '', Ss: '', ns: '', Zci: '', Zcs: '', Zf: '', Ld: '', Lc: '', La: '' };
+  var BOM_MIN = { T: '', alt: '', Zboca: '', Zfondo: '', Zeje: '', Zimp: '', Ltq: '', Btq: '', Zftq: '', ks: '', C: '', Dsu: '', Dim: '', etaM: '', E: '', nu: '', LB: '', BB: '', Dla: '' };
   var ESCENARIOS = {
     sifon: [
       { id: 'normal', nombre: 'Caso base que cumple', desc: 'Red sanitaria con tres conductos automáticos.', datos: {} },
       { id: 'limite', nombre: 'En el límite', desc: 'Conductos con velocidad justa de 1,0 m/s a Qmin.', datos: { modo: 'manual', N: 2, D1: 225.6, D2: 400 } },
       { id: 'fuera', nombre: 'Fuera de norma', desc: 'Un solo conducto de gran diámetro y mucha pendiente.', datos: { modo: 'manual', N: 1, D1: 800, La: 6, Ld: 6 } },
+      { id: 'minimos', nombre: 'Solo datos mínimos', desc: 'Caudales, colectores y obstáculo; lo demás se autocompleta con la norma y muestra el procedimiento.', datos: SIF_MIN },
       { id: 'invalido', nombre: 'Datos inválidos', desc: 'Negativo, texto y dato faltante.', datos: { Qmin: -5, Qmed: 'abc', Qmax: '' } }
     ],
     bomba: [
       { id: 'normal', nombre: 'Caso base que cumple', desc: 'Alcantarillado con 1 bomba activa y 1 de reserva.', datos: {} },
       { id: 'limite', nombre: 'En el límite', desc: 'Impulsión cerca del máximo de 2,4 m/s.', datos: { Dim: 240 } },
       { id: 'fuera', nombre: 'Fuera de norma', desc: 'Impulsión pequeña, cierre brusco y bomba mal ubicada.', datos: { Dim: 150, Dsu: 150, nInst: 1, Zeje: 16, Tc: 2, Zboca: 9.9, PN: 60 } },
+      { id: 'minimos', nombre: 'Solo datos mínimos', desc: 'Caudal, niveles, longitudes y curva; lo demás se autocompleta con la norma.', datos: BOM_MIN },
+      { id: 'serie', nombre: 'Curva que no alcanza', desc: 'La bomba no vence la altura: la aplicación propone bombas en serie o en paralelo.', datos: { Zdis: 48, Qd: 120, Dim: 280, Dsu: 330 } },
       { id: 'invalido', nombre: 'Datos inválidos', desc: 'Negativo, texto y dato faltante.', datos: { Qd: -10, Dim: 'abc', Lim: '' } }
     ]
   };
@@ -1830,7 +2259,13 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     { id: 'BO-07', mod: 'bomba', tipo: 'Fuera de norma', desc: 'Bomba no vence la altura estática', datos: { Zdis: 60 }, espera: 'Error de operación con sugerencia', ok: function (r) { return r.nodes.operacion.status === 'error' && r.nodes.operacion.sug; } },
     { id: 'BO-08', mod: 'bomba', tipo: 'Inválido', desc: 'Caudal negativo', datos: { Qd: -10 }, espera: 'Rechaza y bloquea la curva del sistema', ok: function (r) { return r.val.invalid.Qd && r.nodes.sistema.status === 'blocked'; } },
     { id: 'BO-09', mod: 'bomba', tipo: 'Inválido', desc: 'Diámetro cero', datos: { Dim: 0 }, espera: 'Rechaza el cero', ok: function (r) { return r.val.invalid.Dim; } },
-    { id: 'BO-10', mod: 'bomba', tipo: 'Inválido', desc: 'Texto en la curva de la bomba', datos: { curva: 'hola, 1\n2, 3' }, espera: 'Error en la curva e indica la fila', ok: function (r) { return r.nodes.curva.status === 'error'; } }
+    { id: 'BO-10', mod: 'bomba', tipo: 'Inválido', desc: 'Texto en la curva de la bomba', datos: { curva: 'hola, 1\n2, 3' }, espera: 'Error en la curva e indica la fila', ok: function (r) { return r.nodes.curva.status === 'error'; } },
+    { id: 'SF-11', mod: 'sifon', tipo: 'Autocompletado', desc: 'Solo datos mínimos: cotas, longitudes y n se completan', datos: SIF_MIN, espera: 'Calcula todo, sin incumplir norma, y lista cada valor completado', ok: function (r) { return r.complete && summarize(r).fail === 0 && r.autos.length >= 15; } },
+    { id: 'SF-12', mod: 'sifon', tipo: 'Normal', desc: 'Cruce bajo una vía con recubrimiento sugerido', datos: { obst: 'via', Znivel: 96.0, recub: '' }, espera: 'Usa 1,20 m de recubrimiento y lo verifica en S16', ok: function (r) { return r.v.recub === 1.2 && r.checks.some(function (c) { return c.ch.id === 'S16' && c.estado !== 'pend'; }); } },
+    { id: 'BO-11', mod: 'bomba', tipo: 'Autocompletado', desc: 'Solo datos mínimos: diámetros, cotas y pozo se completan', datos: BOM_MIN, espera: 'Calcula todo sin incumplir norma y lista lo completado', ok: function (r) { return r.complete && summarize(r).fail === 0 && r.autos.length >= 12; } },
+    { id: 'BO-12', mod: 'bomba', tipo: 'Fuera de norma', desc: 'La bomba no vence 38 m de altura estática', datos: { Zdis: 48, Qd: 120, Dim: 280, Dsu: 330 }, espera: 'Propone bombas en serie', ok: function (r) { return r.nodes.arreglo.status === 'ok' && r.ctx.altBest.apta && r.ctx.altBest.nS >= 2; } },
+    { id: 'BO-13', mod: 'bomba', tipo: 'Fuera de norma', desc: 'Caudal de diseño mayor al de una bomba', datos: { Qd: 200, Dim: 360, Dsu: 410 }, espera: 'Propone bombas en paralelo', ok: function (r) { return r.ctx.altBest && r.ctx.altBest.apta && r.ctx.altBest.nP >= 2; } },
+    { id: 'BO-14', mod: 'bomba', tipo: 'Normal', desc: 'ΣK sale de la tabla de accesorios', datos: {}, espera: 'ΣK succión 3,0 e impulsión 8,0', ok: function (r) { return Math.abs(r.v.Ksu - 3) < 1e-9 && Math.abs(r.v.Kim - 8) < 1e-9; } }
   ];
   function hasFail(r, id) { return r.checks.some(function (c) { return c.ch.id === id && c.estado === 'fail'; }); }
   function correrPruebas() {
@@ -1861,7 +2296,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     fmt: fmt, parseNum: parseNum, parseCurva: parseCurva, usable: usable,
     asignar: asignar, gobierna: gobierna, topes: topes, alturaSistema: alturaSistema, interpCol: interpCol, perdidasConducto: perdidasConducto, repartir: repartir,
     agua: agua, colebrook: colebrook, normalDepth: normalDepth, areaC: areaC, puntoOperacion: puntoOperacion,
-    limitesSifon: limitesSifon
+    limitesSifon: limitesSifon, arregloTxt: arregloTxt, DESCR: DESCR, ACC: ACC, parseAcc: parseAcc, sifonTablas: sifonTablas, bombaTablas: bombaTablas, velocidadParaQd: velocidadParaQd
   };
 });
 </script>
@@ -1934,6 +2369,10 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     (cfg.hlines || []).forEach(function (l) {
       el('line', { x1: m.l, x2: W - m.r, y1: py(l.y), y2: py(l.y), style: 'stroke:var(' + l.color + ');stroke-width:1.5;stroke-dasharray:6 4' }, f.svg);
       var t = el('text', { x: W - m.r - 3, y: py(l.y) - 5, 'text-anchor': 'end', class: 'lbl s' }, f.svg); t.textContent = l.label;
+    });
+    (cfg.vlines || []).forEach(function (l) {
+      el('line', { x1: px(l.x), x2: px(l.x), y1: m.t, y2: H - m.b, style: 'stroke:var(' + l.color + ');stroke-width:1.5;stroke-dasharray:6 4' }, f.svg);
+      var t = el('text', { x: px(l.x) + 4, y: m.t + 12, 'text-anchor': 'start', class: 'lbl s' }, f.svg); t.textContent = l.label;
     });
     cfg.series.forEach(function (s) {
       if (s.pointsOnly) {
@@ -2108,13 +2547,23 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     // Terreno con el obstáculo cortado
     var soil = 'M0 ' + Z(zTop) + 'L' + (x1 - 16) + ' ' + Z(zTop) + 'L' + (x1 + 22) + ' ' + Z(v.Zobs) + 'L' + (x2 - 22) + ' ' + Z(v.Zobs) + 'L' + (x2 + 16) + ' ' + Z(zTop) + 'L' + W + ' ' + Z(zTop) + 'L' + W + ' ' + H + 'L0 ' + H + 'Z';
     el('path', { d: soil, style: 'fill:var(--soil);stroke:var(--soil-2);stroke-width:1.5' }, svg);
-    // Agua u obstáculo
-    if (v.Znivel > v.Zobs) {
+    // Obstáculo según su tipo
+    var ob = root.Engine.DESCR.obst[v.obst] || { t: 'Obstáculo', zobs: 'fondo', znivel: 'nivel' };
+    var agua = (v.obst === 'rio' || v.obst === 'arroyo' || v.obst === 'canal') && v.Znivel > v.Zobs;
+    if (agua) {
       var dz = (v.Znivel - v.Zobs) / (zTop - v.Zobs || 1);
       el('path', { d: 'M' + (x1 + 22 - 38 * dz) + ' ' + Z(v.Znivel) + 'L' + (x2 - 22 + 38 * dz) + ' ' + Z(v.Znivel) + 'L' + (x2 - 22) + ' ' + Z(v.Zobs) + 'L' + (x1 + 22) + ' ' + Z(v.Zobs) + 'Z', style: 'fill:var(--water-soft);stroke:var(--water);stroke-width:1' }, svg);
-      text(svg, (x1 + x2) / 2, Z(v.Znivel) + 16, 'Obstáculo: nivel ' + f(v.Znivel) + ' m', 'w', 'middle');
-      text(svg, (x1 + x2) / 2, Z(v.Zobs) - 7, 'Fondo ' + f(v.Zobs) + ' m', 's', 'middle');
+      flow(svg, 'M' + (x1 + 40) + ' ' + (Z(v.Znivel) + 6) + 'L' + (x2 - 40) + ' ' + (Z(v.Znivel) + 6), 0.5, 2, 'var(--water)');
+    } else if (v.obst === 'via' || v.obst === 'ferrea') {
+      el('rect', { x: x1 + 22, y: Z(v.Zobs) - 9, width: x2 - x1 - 44, height: 9, style: 'fill:' + (v.obst === 'via' ? '#5b6366' : '#8b7f6a') }, svg);
+      if (v.obst === 'via') el('line', { x1: x1 + 30, x2: x2 - 30, y1: Z(v.Zobs) - 4.5, y2: Z(v.Zobs) - 4.5, style: 'stroke:#fff;stroke-width:2;stroke-dasharray:14 10' }, svg);
+      else for (var rr = 0; rr < 2; rr++) el('rect', { x: (x1 + x2) / 2 - 60 + rr * 110, y: Z(v.Zobs) - 16, width: 10, height: 7, style: 'fill:var(--pipe)' }, svg);
+    } else if (v.obst === 'tuberia') {
+      var rp = Math.max(8, (Z(v.Zobs) - Z(Math.max(v.Znivel, v.Zobs + 0.3))) / 2);
+      el('circle', { cx: (x1 + x2) / 2, cy: Z(v.Zobs) - rp, r: rp, style: 'fill:var(--surface-2);stroke:var(--pipe);stroke-width:2.5' }, svg);
     }
+    text(svg, (x1 + x2) / 2, Z(Math.max(v.Znivel, v.Zobs)) - 14, ob.t + (v.Znivel > v.Zobs ? ' · ' + ob.znivel + ' ' + f(v.Znivel) + ' m' : ''), agua ? 'w' : '', 'middle');
+    text(svg, (x1 + x2) / 2, Z(v.Zobs) + 18, ob.zobs.charAt(0).toUpperCase() + ob.zobs.slice(1) + ' ' + f(v.Zobs) + ' m · recubrimiento ' + f(v.Zobs - v.Zf - Math.max.apply(null, c.bs.map(function (b) { return b.D / 1000; }))) + ' m', 's', 'middle');
 
     // Línea del conducto
     var pipeD = 'M' + x0 + ' ' + Z(v.Zci) + 'L' + x1 + ' ' + Z(v.Zf) + 'L' + x2 + ' ' + Z(v.Zf) + 'L' + x3 + ' ' + Z(v.Zcs);
@@ -2146,8 +2595,19 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     var hSal = c.sal[idx].y / (zmax - zmin) * (bot - top);
     el('rect', { class: 'tr', x: cheS.x + cheS.w, y: ys - hSal, width: W - cheS.x - cheS.w, height: hSal, style: 'fill:var(--water-soft)' }, svg);
     flow(svg, 'M' + (cheS.x + cheS.w) + ' ' + (ys - hSal / 2) + 'L' + W + ' ' + (ys - hSal / 2), c.sal[idx].V, 2.5, 'var(--water)');
-    drawChamber(cheE, o.NAe, 'Cámara de entrada', 'start');
-    drawChamber(cheS, o.NAs, 'Cámara de salida', 'end');
+    drawChamber(cheE, o.NAe, 'Cámara de entrada · tapa ' + f(v.Ztce), 'start');
+    drawChamber(cheS, o.NAs, 'Cámara de salida · tapa ' + f(v.Ztcs), 'end');
+    if (c.cam) {
+      c.cam.ent.comp.forEach(function (k) {
+        if (k.cresta === null) return;
+        var yc = Z(k.cresta);
+        el('line', { x1: cheE.x + 6, x2: cheE.x + cheE.w - 6, y1: yc, y2: yc, style: 'stroke:#8a5a2b;stroke-width:3;stroke-dasharray:6 3' }, svg);
+      });
+    }
+    // Pendientes de los tramos
+    text(svg, (x0 + x1) / 2 + 14, (Z(v.Zci) + Z(v.Zf)) / 2 - 10, 'S = ' + f(c.g.pB, 1) + ' %', 'm');
+    text(svg, (x2 + x3) / 2 - 14, (Z(v.Zcs) + Z(v.Zf)) / 2 - 10, 'S = ' + f(c.g.pS, 1) + ' %', 'm', 'end');
+    text(svg, (x1 + x2) / 2, Z(v.Zf) - 14, 'S = 0 %', 'm', 'middle');
 
     // Línea de energía y piezométrica
     var ptsX = [x0, x1, x2, x3];
@@ -2233,15 +2693,16 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     var sucY = Z(v.Zboca);
     var bx = wx + ww * 0.62;
     var sucD = 'M' + bx + ' ' + sucY + 'L' + bx + ' ' + py + 'L' + (px - 26) + ' ' + py;
-    el('path', { d: sucD, style: 'fill:none;stroke:var(--pipe);stroke-width:15;stroke-linejoin:round' }, svg);
+    el('path', { d: sucD, style: 'fill:none;stroke:var(--s3);stroke-width:15;stroke-linejoin:round' }, svg);
     el('path', { d: sucD, style: 'fill:none;stroke:var(--water);stroke-width:10;stroke-linejoin:round' }, svg);
     flow(svg, sucD, c.vel.s, 3);
     el('circle', { cx: bx, cy: sucY, r: 3, style: 'fill:var(--pipe)' }, svg);
 
     // Impulsión
     var xEnd = W - 190, zDisY = Z(v.Zdis);
-    var impD = 'M' + (px + 26) + ' ' + py + 'L' + (px + 76) + ' ' + py + 'L' + (px + 76) + ' ' + (zDisY + 44) + 'L' + xEnd + ' ' + (zDisY + 18);
-    el('path', { d: impD, style: 'fill:none;stroke:var(--pipe);stroke-width:13;stroke-linejoin:round' }, svg);
+    var xr = px + 230, yOut = zDisY + (v.descarga === 'libre' ? -12 : 16);
+    var impD = 'M' + (px + 26) + ' ' + py + 'L' + xr + ' ' + py + 'L' + xr + ' ' + (zDisY + 44) + 'L' + (xEnd - 30) + ' ' + yOut + 'L' + (xEnd + 22) + ' ' + yOut;
+    el('path', { d: impD, style: 'fill:none;stroke:var(--s2);stroke-width:13;stroke-linejoin:round' }, svg);
     el('path', { d: impD, style: 'fill:none;stroke:var(--water);stroke-width:8;stroke-linejoin:round' }, svg);
     flow(svg, impD, c.vel.i, 3);
 
@@ -2250,15 +2711,38 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     var imp = el('g', { class: 'spin', style: 'animation-duration:' + Math.max(0.3, 1.2 / Math.max(c.op.Qp / 60, 0.2)).toFixed(2) + 's' }, svg);
     for (var i = 0; i < 4; i++) el('path', { d: 'M' + px + ' ' + py + 'L' + px + ' ' + (py - 20), transform: 'rotate(' + (i * 90) + ' ' + px + ' ' + py + ')', style: 'stroke:#fff;stroke-width:4;stroke-linecap:round' }, imp);
     el('circle', { cx: px, cy: py, r: 28.01, style: 'fill:none' }, imp);
-    text(svg, px, py + 48, v.nAct + ' en operación · ' + Math.max(v.nInst - v.nAct, 0) + ' en reserva', '', 'middle');
+    var nOp = v.nAct * (v.nSer || 1);
+    text(svg, px, py + 48, (v.nSer > 1 ? v.nAct + ' en paralelo × ' + v.nSer + ' en serie' : v.nAct + ' en operación') + ' · ' + Math.max(v.nInst - nOp, 0) + ' en reserva', '', 'middle');
     text(svg, px, py + 64, 'Eje a cota ' + f(v.Zeje) + ' m', 's', 'middle');
+    // Accesorios sobre las tuberías
+    if (c.acc && !c.acc.manual) {
+      var tiene = function (lst, id) { return lst.some(function (a) { return a.id === id; }); };
+      var su = c.acc.su.items, im = c.acc.im.items, hx = (bx + px - 26) / 2;
+      var marca = function (id, x, y, col, lab, dy) { sym(svg, id, x, y, col); if (lab) text(svg, x, y + (dy || 26), lab, 's', 'middle'); };
+      if (tiene(su, 'entrada_recta') || tiene(su, 'entrada_campana')) marca(tiene(su, 'entrada_campana') ? 'entrada_campana' : 'entrada_recta', bx, sucY + 10, 'var(--s3)', 'Entrada', 26);
+      if (tiene(su, 'codo90') || tiene(su, 'codo45')) marca(tiene(su, 'codo90') ? 'codo90' : 'codo45', bx, py, 'var(--s3)', 'Codo', 30);
+      if (tiene(su, 'v_comp') || tiene(su, 'v_mari')) marca(tiene(su, 'v_comp') ? 'v_comp' : 'v_mari', hx, py, 'var(--s3)', 'Válvula', 30);
+      if (tiene(su, 'reduccion')) marca('reduccion', px - 46, py, 'var(--s3)', 'Reducción', -18);
+      if (tiene(im, 'ampliacion')) marca('ampliacion', px + 48, py, 'var(--s2)', 'Ampliación', -18);
+      if (tiene(im, 'v_cheq')) marca('v_cheq', px + 104, py, 'var(--s2)', 'Cheque', 30);
+      if (tiene(im, 'v_comp') || tiene(im, 'v_mari')) marca(tiene(im, 'v_comp') ? 'v_comp' : 'v_mari', px + 160, py, 'var(--s2)', 'Compuerta', -22);
+      if (tiene(im, 'tee_lat') || tiene(im, 'tee_dir')) marca('tee_lat', xr, py, 'var(--s2)', 'Tee', 30);
+      if (tiene(im, 'codo90') || tiene(im, 'codo45')) marca(tiene(im, 'codo45') ? 'codo45' : 'codo90', xr, zDisY + 44, 'var(--s2)', 'Codos', -16);
+      marca('salida', xEnd - 6, yOut, 'var(--s2)', '', 0);
+    }
+    // Leyenda de tuberías
+    el('line', { x1: 24, y1: H - 18, x2: 52, y2: H - 18, style: 'stroke:var(--s3);stroke-width:8' }, svg); text(svg, 58, H - 13, 'Tubería de succión', 's');
+    el('line', { x1: 210, y1: H - 18, x2: 238, y2: H - 18, style: 'stroke:var(--s2);stroke-width:8' }, svg); text(svg, 244, H - 13, 'Tubería de impulsión', 's');
 
     // Tanque o cámara de descarga
     var tx = xEnd, tw = 150;
     el('rect', { x: tx, y: zDisY - 18, width: tw, height: 70, style: 'fill:var(--surface);stroke:var(--concrete);stroke-width:5' }, svg);
     el('rect', { x: tx + 3, y: zDisY, width: tw - 6, height: 49, style: 'fill:var(--water-soft)' }, svg);
     el('line', { x1: tx + 3, x2: tx + tw - 3, y1: zDisY, y2: zDisY, style: 'stroke:var(--water);stroke-width:2' }, svg);
-    text(svg, tx + tw / 2, zDisY - 26, 'Descarga ' + f(v.Zdis) + ' m', 'm', 'middle');
+    text(svg, tx + tw / 2, zDisY - 44, root.Engine.DESCR.tanque[v.tanque] ? root.Engine.DESCR.tanque[v.tanque].t : 'Tanque de descarga', '', 'middle');
+    text(svg, tx + tw / 2, zDisY - 26, 'Nivel ' + f(v.Zdis) + ' m', 'm', 'middle');
+    text(svg, tx + tw / 2, zDisY + 70, 'Salida ' + f(v.Zimp) + ' · fondo ' + f(v.Zftq), 's', 'middle');
+    text(svg, tx + tw / 2, zDisY + 87, v.descarga === 'libre' ? 'Descarga libre' : 'Descarga ahogada', 's', 'middle');
 
     // Línea de altura piezométrica (presión en la impulsión)
     var hgl0 = v.Znmin + c.op.H;
@@ -2282,7 +2766,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     // Etiquetas de tubería
     text(svg, wx + ww + 16, py - 34, 'Succión Ø' + f(v.Dsu, 0) + ' mm', '');
     text(svg, wx + ww + 16, py - 15, 'Vs = ' + f(c.vel.s) + ' m/s', 'm');
-    var mx = (px + 76 + xEnd) / 2, my = (zDisY + 44 + zDisY + 18) / 2;
+    var mx = (xr + xEnd) / 2, my = (zDisY + 44 + yOut) / 2;
     text(svg, mx, my + 26, 'Impulsión Ø' + f(v.Dim, 0) + ' mm · L = ' + f(v.Lim, 0) + ' m', '', 'middle');
     text(svg, mx, my + 43, 'Vi = ' + f(c.vel.i) + ' m/s', 'm', 'middle');
 
@@ -2303,8 +2787,268 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     return true;
   }
 
-  /* ---------- Sifón simple para la tarjeta de inicio ---------- */
-  root.Schemes = { sifon: sifon, bomba: bomba };
+  /* ---------- Símbolos de accesorios ---------- */
+  function sym(svg, id, x, y, color) {
+    var g = el('g', { transform: 'translate(' + x + ' ' + y + ')' }, svg);
+    var st = 'fill:var(--surface);stroke:' + color + ';stroke-width:2.2';
+    var stF = 'fill:' + color + ';stroke:' + color + ';stroke-width:1.5';
+    if (id === 'v_comp') { el('path', { d: 'M-11 -8L11 8L11 -8L-11 8Z', style: st }, g); el('line', { x1: 0, y1: 0, x2: 0, y2: -15, style: 'stroke:' + color + ';stroke-width:2' }, g); el('line', { x1: -6, y1: -15, x2: 6, y2: -15, style: 'stroke:' + color + ';stroke-width:2.5' }, g); }
+    else if (id === 'v_cheq') { el('path', { d: 'M-11 -8L11 8L11 -8L-11 8Z', style: st }, g); el('path', { d: 'M-11 -8L0 0L-11 8Z', style: stF }, g); }
+    else if (id === 'v_mari') { el('circle', { r: 9, style: st }, g); el('line', { x1: -6, y1: 6, x2: 6, y2: -6, style: 'stroke:' + color + ';stroke-width:2.5' }, g); }
+    else if (id === 'codo90') el('path', { d: 'M-10 -10L-10 6Q-10 10 -6 10L10 10', style: 'fill:none;stroke:' + color + ';stroke-width:5;stroke-linecap:round' }, g);
+    else if (id === 'codo45') el('path', { d: 'M-11 8L-2 8L10 -6', style: 'fill:none;stroke:' + color + ';stroke-width:5;stroke-linecap:round;stroke-linejoin:round' }, g);
+    else if (id === 'tee_dir' || id === 'tee_lat') { el('path', { d: 'M-12 4L12 4M0 4L0 -12', style: 'fill:none;stroke:' + color + ';stroke-width:5;stroke-linecap:round' }, g); if (id === 'tee_lat') el('path', { d: 'M-3 -6L0 -12L3 -6', style: 'fill:none;stroke:var(--ink);stroke-width:1.6' }, g); }
+    else if (id === 'reduccion') el('path', { d: 'M-10 -9L10 -5L10 5L-10 9Z', style: st }, g);
+    else if (id === 'ampliacion') el('path', { d: 'M-10 -5L10 -9L10 9L-10 5Z', style: st }, g);
+    else if (id === 'entrada_recta') el('path', { d: 'M-4 -9L-4 9M-4 -6L10 -6M-4 6L10 6', style: 'fill:none;stroke:' + color + ';stroke-width:2.5' }, g);
+    else if (id === 'entrada_campana') el('path', { d: 'M-8 -11Q-2 -6 10 -6M-8 11Q-2 6 10 6', style: 'fill:none;stroke:' + color + ';stroke-width:2.5' }, g);
+    else if (id === 'union') el('path', { d: 'M-5 -9L-5 9M5 -9L5 9M-5 0L5 0', style: 'fill:none;stroke:' + color + ';stroke-width:3' }, g);
+    else if (id === 'salida') el('path', { d: 'M-10 -6L4 -6M-10 6L4 6M4 -10L4 10', style: 'fill:none;stroke:' + color + ';stroke-width:2.5' }, g);
+    else el('circle', { r: 7, style: st }, g);
+    return g;
+  }
+
+  /* ---------- Planta del sifón ---------- */
+  function planta(host, res, idx) {
+    host.innerHTML = '';
+    var c = res.ctx, v = res.v;
+    if (!c.cam || !c.casos) return false;
+    var E = root.Engine, o = c.casos[idx], N = c.bs.length;
+    var W = 1160, H = 560;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Planta del sifón invertido' }, host);
+    arrowDefs(svg);
+    var cx0 = 120, cw = 150, cy = 120, ch = Math.min(320, Math.max(170, 70 * N + 40));
+    var x3 = W - cx0 - cw, xA = cx0 + cw, xB = x3;
+    var Lt = v.Ld + v.Lc + v.La;
+    var X = function (s) { return xA + s / Lt * (xB - xA); };
+    var mid = cy + ch / 2;
+    // Obstáculo cruzando la traza
+    var ox1 = X(v.Ld + 1), ox2 = X(v.Ld + v.Lc - 1);
+    var tipo = v.obst;
+    if (tipo === 'via' || tipo === 'ferrea') {
+      el('rect', { x: ox1, y: 30, width: ox2 - ox1, height: H - 90, style: 'fill:' + (tipo === 'via' ? '#7d8487' : '#9b8f7a') + ';opacity:.55' }, svg);
+      if (tipo === 'via') el('line', { x1: (ox1 + ox2) / 2, y1: 34, x2: (ox1 + ox2) / 2, y2: H - 64, style: 'stroke:#fff;stroke-width:3;stroke-dasharray:18 14' }, svg);
+      else for (var t = 0; t < 2; t++) el('line', { x1: ox1 + (ox2 - ox1) * (0.38 + 0.24 * t), y1: 30, x2: ox1 + (ox2 - ox1) * (0.38 + 0.24 * t), y2: H - 60, style: 'stroke:var(--pipe);stroke-width:4' }, svg);
+    } else if (tipo === 'tuberia') {
+      el('rect', { x: (ox1 + ox2) / 2 - 9, y: 30, width: 18, height: H - 90, style: 'fill:var(--surface-2);stroke:var(--pipe);stroke-width:2' }, svg);
+    } else if (tipo === 'depresion') {
+      for (var k = 0; k < 4; k++) el('ellipse', { cx: (ox1 + ox2) / 2, cy: mid, rx: (ox2 - ox1) / 2 * (1 - k * 0.2), ry: (H / 2 - 40) * (1 - k * 0.2), style: 'fill:none;stroke:var(--soil-2);stroke-width:1.5;stroke-dasharray:6 4' }, svg);
+    } else {
+      var wv = 'M' + ox1 + ' 30';
+      for (var yy = 30; yy <= H - 60; yy += 40) wv += 'Q' + (ox1 - 10) + ' ' + (yy + 20) + ' ' + ox1 + ' ' + (yy + 40);
+      var wv2 = 'L' + ox2 + ' ' + (H - 60 + 10);
+      for (var y2 = H - 50; y2 >= 30; y2 -= 40) wv2 += 'Q' + (ox2 + 10) + ' ' + (y2 - 20) + ' ' + ox2 + ' ' + (y2 - 40);
+      el('path', { d: wv + wv2 + 'Z', style: 'fill:var(--water-soft);stroke:var(--water);stroke-width:1.5' }, svg);
+      flow(svg, 'M' + ((ox1 + ox2) / 2) + ' 40L' + ((ox1 + ox2) / 2) + ' ' + (H - 70), 0.6, 3, 'var(--water)');
+    }
+    text(svg, (ox1 + ox2) / 2, 22, root.Engine.DESCR.obst[tipo].t + ' · ancho ' + f(v.Bobs, 1) + ' m', '', 'middle');
+    // Colectores
+    var bandE = Math.max(14, Math.min(40, v.De / 20)), bandS = Math.max(14, Math.min(40, v.Ds / 20));
+    el('rect', { x: 0, y: mid - bandE / 2, width: cx0, height: bandE, style: 'fill:var(--water-soft);stroke:var(--pipe);stroke-width:2' }, svg);
+    flow(svg, 'M0 ' + mid + 'L' + cx0 + ' ' + mid, c.ent[idx].V, 2.5, 'var(--water)');
+    text(svg, 6, mid - bandE / 2 - 26, 'Llegada', 's'); text(svg, 6, mid - bandE / 2 - 9, 'Ø' + f(v.De, 0) + ' · ' + f(v.Se) + ' %', 'm');
+    el('rect', { x: x3 + cw, y: mid - bandS / 2, width: W - x3 - cw, height: bandS, style: 'fill:var(--water-soft);stroke:var(--pipe);stroke-width:2' }, svg);
+    flow(svg, 'M' + (x3 + cw) + ' ' + mid + 'L' + W + ' ' + mid, c.sal[idx].V, 2.5, 'var(--water)');
+    text(svg, W - 6, mid - bandS / 2 - 26, 'Salida', 's', 'end'); text(svg, W - 6, mid - bandS / 2 - 9, 'Ø' + f(v.Ds, 0) + ' · ' + f(v.Ss) + ' %', 'm', 'end');
+    // Cámaras con compartimientos
+    var camara = function (x0, salida) {
+      el('rect', { x: x0, y: cy, width: cw, height: ch, style: 'fill:var(--surface);stroke:var(--concrete);stroke-width:6' }, svg);
+      var canal = 34, cxC = salida ? x0 + cw - canal : x0;
+      var tieneTab = !salida || v.camS === 'tabiques';
+      el('rect', { x: cxC + 3, y: cy + 3, width: canal - 3, height: ch - 6, style: 'fill:var(--water-soft);opacity:.8' }, svg);
+      var hcomp = (ch - 8) / N;
+      for (var i = 0; i < N; i++) {
+        var y0 = cy + 4 + i * hcomp, act = i < o.k;
+        var bx = salida ? x0 + 4 : x0 + canal + 4, bw = cw - canal - 8;
+        el('rect', { class: 'tr', x: bx, y: y0 + 2, width: bw, height: hcomp - 4, style: 'fill:' + (act ? 'var(--water-soft)' : 'var(--surface-2)') }, svg);
+        if (tieneTab && i > 0) el('line', { x1: bx - (salida ? 0 : 2), y1: y0, x2: bx + bw + (salida ? 2 : 0), y2: y0, style: 'stroke:var(--concrete);stroke-width:' + Math.max(4, Math.min(9, v.esep * 30)) }, svg);
+        var wx = salida ? x0 + cw - canal : x0 + canal;
+        if (tieneTab && (i > 0 || salida)) el('line', { x1: wx, y1: y0 + 6, x2: wx, y2: y0 + hcomp - 6, style: 'stroke:#8a5a2b;stroke-width:4' }, svg);
+        text(svg, bx + bw / 2, y0 + hcomp / 2 + 5, String(i + 1), 'm', 'middle');
+      }
+      return hcomp;
+    };
+    var hcomp = camara(cx0, false);
+    camara(x3, true);
+    text(svg, cx0, cy - 30, 'Cámara de entrada', '');
+    text(svg, cx0, cy - 12, f(c.cam.ent.B) + ' × ' + f(c.cam.ent.L) + ' m · ' + root.Engine.DESCR.camE[v.camE].t, 's');
+    text(svg, x3 + cw, cy - 30, 'Cámara de salida', '', 'end');
+    text(svg, x3 + cw, cy - 12, f(c.cam.sal.B) + ' × ' + f(c.cam.sal.L) + ' m · ' + root.Engine.DESCR.camS[v.camS].t, 's', 'end');
+    // Conductos
+    var maxD = Math.max.apply(null, c.bs.map(function (b) { return b.D; }));
+    c.bs.forEach(function (b, i) {
+      var yb = cy + 4 + i * hcomp + hcomp / 2, act = i < o.k, wpx = 5 + 9 * b.D / maxD;
+      var d = 'M' + xA + ' ' + yb + 'L' + xB + ' ' + yb;
+      el('path', { d: d, style: 'fill:none;stroke:var(--pipe);stroke-width:' + (wpx + 4) }, svg);
+      el('path', { class: 'tr', d: d, style: 'fill:none;stroke:' + (act ? 'var(--water)' : 'var(--surface-2)') + ';stroke-width:' + wpx }, svg);
+      if (act) flow(svg, d, o.barrels[i].V, Math.max(2, wpx * 0.35));
+      var lx = X(v.Ld * 0.45);
+      text(svg, lx, yb - wpx / 2 - 6, 'Conducto ' + b.id + ' · Ø' + f(b.D, 0) + ' mm', 's', 'middle');
+      text(svg, X(v.Ld + v.Lc + v.La * 0.55), yb - wpx / 2 - 6, act ? f(o.barrels[i].Q * 1000, 1) + ' L/s · ' + f(o.barrels[i].V) + ' m/s' : 'sin servicio', act ? 'm' : 's', 'middle');
+    });
+    // Puntos de quiebre y cotas de longitud
+    [[0, 'Entrada'], [v.Ld, 'Inicio tramo inferior'], [v.Ld + v.Lc, 'Fin tramo inferior'], [Lt, 'Salida']].forEach(function (p) {
+      el('line', { x1: X(p[0]), y1: cy + ch + 8, x2: X(p[0]), y2: cy + ch + 34, style: 'stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3' }, svg);
+    });
+    var yd = cy + ch + 30;
+    dim(svg, X(0), yd, X(v.Ld), yd, 'Ld ' + f(v.Ld, 1) + ' m', 'middle', 0, 18);
+    dim(svg, X(v.Ld), yd, X(v.Ld + v.Lc), yd, 'Lc ' + f(v.Lc, 1) + ' m', 'middle', 0, 18);
+    dim(svg, X(v.Ld + v.Lc), yd, X(Lt), yd, 'La ' + f(v.La, 1) + ' m', 'middle', 0, 18);
+    // Leyenda
+    var ly = H - 22;
+    el('line', { x1: 20, y1: ly, x2: 44, y2: ly, style: 'stroke:var(--concrete);stroke-width:7' }, svg); text(svg, 50, ly + 5, 'Separador (' + f(v.esep) + ' m)', 's');
+    el('line', { x1: 230, y1: ly, x2: 254, y2: ly, style: 'stroke:#8a5a2b;stroke-width:4' }, svg); text(svg, 260, ly + 5, 'Vertedero', 's');
+    el('rect', { x: 370, y: ly - 7, width: 24, height: 14, style: 'fill:var(--water-soft)' }, svg); text(svg, 400, ly + 5, 'Canal de reparto o de salida', 's');
+    text(svg, W - 20, ly + 5, o.key + ' = ' + f(o.Q * 1000, 1) + ' L/s · ' + o.k + ' de ' + N + ' en servicio · planta sin escala en las cámaras', 's', 'end');
+    void E;
+    return true;
+  }
+
+  /* ---------- Sección transversal de los conductos en el punto bajo ---------- */
+  function seccion(host, res, idx) {
+    host.innerHTML = '';
+    var c = res.ctx, v = res.v;
+    if (!c.casos) return false;
+    var o = c.casos[idx], N = c.bs.length, sepL = 0.30;
+    var W = 1160, H = 400;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Sección de los conductos del sifón' }, host);
+    arrowDefs(svg);
+    var Ds = c.bs.map(function (b) { return b.D / 1000; }), Dmax = Math.max.apply(null, Ds);
+    var ancho = Ds.reduce(function (s, d) { return s + d; }, 0) + (N + 1) * sepL;
+    var zTop = v.Zobs + 0.6, zBot = v.Zf - 0.35;
+    var s = Math.min(330 / ancho, 280 / (zTop - zBot));
+    var x0 = 170, xe = x0 + ancho * s, Y = function (z) { return 80 + (zTop - z) * s; };
+    el('rect', { x: x0, y: Y(v.Zobs), width: ancho * s, height: Y(zBot) - Y(v.Zobs), style: 'fill:var(--soil);stroke:var(--soil-2);stroke-width:1.5' }, svg);
+    el('rect', { x: x0, y: Y(v.Zf + Dmax + 0.15), width: ancho * s, height: Y(zBot) - Y(v.Zf + Dmax + 0.15), style: 'fill:var(--surface-2);opacity:.7' }, svg);
+    if (v.Znivel > v.Zobs) {
+      el('rect', { x: x0, y: Y(zTop), width: ancho * s, height: Y(v.Zobs) - Y(zTop), style: 'fill:var(--water-soft)' }, svg);
+      text(svg, (x0 + xe) / 2, Y(zTop) + 18, 'Agua hasta ' + f(v.Znivel) + ' m', 'w', 'middle');
+    }
+    el('line', { x1: x0 - 10, x2: xe + 10, y1: Y(v.Zobs), y2: Y(v.Zobs), style: 'stroke:var(--pipe);stroke-width:2.5' }, svg);
+    text(svg, x0 - 16, Y(v.Zobs) + 5, 'Fondo ' + f(v.Zobs), 'm', 'end');
+    text(svg, x0 - 16, Y(v.Zf + Dmax) + 5, 'Clave ' + f(v.Zf + Dmax), 'm', 'end');
+    text(svg, x0 - 16, Y(v.Zf) + 5, 'Batea ' + f(v.Zf), 'm', 'end');
+    el('line', { x1: x0, x2: xe, y1: Y(v.Zf + Dmax), y2: Y(v.Zf + Dmax), style: 'stroke:var(--ink-3);stroke-dasharray:4 4' }, svg);
+    dim(svg, xe + 24, Y(v.Zobs), xe + 24, Y(v.Zf + Dmax), null);
+    text(svg, xe + 34, (Y(v.Zobs) + Y(v.Zf + Dmax)) / 2, 'Recubrimiento ' + f(v.Zobs - v.Zf - Dmax) + ' m', 'm');
+    text(svg, xe + 34, (Y(v.Zobs) + Y(v.Zf + Dmax)) / 2 + 18, 'Mínimo adoptado ' + f(v.recub) + ' m', 's');
+    var xx = x0 + sepL * s, bx0 = xe + 200, paso = Math.min(210, (W - 6 - bx0) / Math.max(N, 1));
+    c.bs.forEach(function (b, i) {
+      var D = Ds[i], r = D / 2 * s, cxp = xx + r, cyp = Y(v.Zf + D / 2), act = i < o.k, bar = o.barrels[i];
+      el('circle', { cx: cxp, cy: cyp, r: r, class: 'tr', style: 'fill:' + (act ? 'var(--water)' : 'var(--surface)') + ';stroke:var(--pipe);stroke-width:2.5' }, svg);
+      text(svg, cxp, cyp + 5, String(b.id), 'm', 'middle');
+      var bx = bx0 + i * paso, by = 110;
+      el('path', { d: 'M' + cxp + ' ' + (cyp + r) + 'L' + cxp + ' ' + (Y(zBot) + 14 + i * 8) + 'L' + (bx - 6) + ' ' + (Y(zBot) + 14 + i * 8) + 'L' + (bx - 6) + ' ' + (by + 104), style: 'fill:none;stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3' }, svg);
+      el('rect', { x: bx - 6, y: by - 22, width: paso - 12, height: 126, rx: 6, style: 'fill:var(--surface);stroke:' + (act ? 'var(--water)' : 'var(--line-strong)') + ';stroke-width:1.5' }, svg);
+      text(svg, bx + 4, by, 'Conducto ' + b.id, '');
+      text(svg, bx + 4, by + 20, 'Ø ' + f(b.D, 0) + ' mm', 'm');
+      text(svg, bx + 4, by + 38, 'A = ' + f(Math.PI * D * D / 4, 4) + ' m²', 's');
+      text(svg, bx + 4, by + 56, act ? 'Q ' + f(bar.Q * 1000, 1) + ' L/s' : 'Sin servicio', act ? 'm' : 's');
+      text(svg, bx + 4, by + 74, act ? 'V ' + f(bar.V) + ' m/s' : '', 'm');
+      text(svg, bx + 4, by + 92, act ? 'H ' + f(bar.hL, 3) + ' m · τ ' + f(bar.tau) + ' Pa' : '', 's');
+      xx += D * s + sepL * s;
+    });
+    text(svg, 20, 30, 'Sección bajo el ' + root.Engine.DESCR.obst[v.obst].t.toLowerCase() + ', a escala real · ' + o.key + ' = ' + f(o.Q * 1000, 1) + ' L/s', '');
+    text(svg, 20, 50, 'Separación libre entre conductos 0,30 m (criterio de diseño) · material ' + (root.Engine.MATERIALS[v.mat] ? root.Engine.MATERIALS[v.mat].label : 'otro') + ' · relleno compactado hasta 0,15 m sobre la clave', 's');
+    return true;
+  }
+
+  /* ---------- Corte de la cámara de entrada: separadores y vertederos ---------- */
+  function camara(host, res, idx) {
+    host.innerHTML = '';
+    var c = res.ctx, v = res.v;
+    if (!c.cam) return false;
+    var o = c.casos[idx], cam = c.cam.ent, N = c.bs.length;
+    var W = 1160, H = 520;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Corte de la cámara de entrada' }, host);
+    arrowDefs(svg);
+    var zTop = cam.tapa + 0.15, zBot = cam.fondo - 0.25;
+    var totalB = cam.comp.reduce(function (s, k) { return s + k.b; }, 0) + (N - 1) * c.cam.e;
+    var s = Math.min(420 / totalB, 400 / (zTop - zBot));
+    var x0 = 300, Y = function (z) { return 50 + (zTop - z) * s; };
+    var wall = 0.2 * s;
+    el('rect', { x: x0 - wall, y: Y(cam.tapa), width: totalB * s + 2 * wall, height: Y(cam.fondo) - Y(cam.tapa) + wall, style: 'fill:var(--concrete)' }, svg);
+    el('rect', { x: x0, y: Y(cam.tapa), width: totalB * s, height: Y(cam.fondo) - Y(cam.tapa), style: 'fill:var(--surface)' }, svg);
+    var xx = x0, crestas = [];
+    cam.comp.forEach(function (k, i) {
+      var act = i < o.k, w = k.b * s;
+      var nivel = act ? o.NAe : cam.fondo;
+      if (act) el('rect', { class: 'tr', x: xx, y: Y(nivel), width: w, height: Y(cam.fondo) - Y(nivel), style: 'fill:var(--water-soft)' }, svg);
+      var r = k.D / 2000 * s;
+      el('circle', { cx: xx + w / 2, cy: Y(cam.fondo) - r, r: r, style: 'fill:' + (act ? 'var(--water)' : 'var(--surface-2)') + ';stroke:var(--pipe);stroke-width:2.5' }, svg);
+      text(svg, xx + w / 2, Y(cam.fondo) - r + 5, String(k.id), 'm', 'middle');
+      if (k.cresta !== null) {
+        el('line', { x1: xx + 4, x2: xx + w - 4, y1: Y(k.cresta), y2: Y(k.cresta), style: 'stroke:#8a5a2b;stroke-width:4' }, svg);
+        crestas.push({ x: xx + w - 4, y: Y(k.cresta), t: 'Cresta ' + k.id + ': ' + f(k.cresta, 3) + ' m' + (k.Lv ? ' · L ' + f(k.Lv) + ' m' : '') });
+      }
+      text(svg, xx + w / 2, Y(cam.fondo) + wall + 22, f(k.b), 's', 'middle');
+      xx += w;
+      if (i < N - 1) {
+        el('rect', { x: xx, y: Y(cam.tapa - 0.05), width: c.cam.e * s, height: Y(cam.fondo) - Y(cam.tapa - 0.05), style: 'fill:var(--concrete);stroke:var(--pipe);stroke-width:1' }, svg);
+        xx += c.cam.e * s;
+      }
+    });
+    el('line', { x1: x0 - 60, x2: x0 + totalB * s + 60, y1: Y(o.NAe), y2: Y(o.NAe), style: 'stroke:var(--water);stroke-width:2;stroke-dasharray:8 5' }, svg);
+    text(svg, x0 - 66, Y(o.NAe) + 5, 'NA ' + o.key + ' ' + f(o.NAe, 3), 'w m', 'end');
+    text(svg, x0 - 66, Y(cam.tapa) + 5, 'Tapa ' + f(cam.tapa), 'm', 'end');
+    text(svg, x0 - 66, Y(cam.fondo) + 5, 'Fondo ' + f(cam.fondo), 'm', 'end');
+    text(svg, x0 - 66, Y(v.Ze) + 5, 'Llegada ' + f(v.Ze), 's', 'end');
+    el('line', { x1: x0 - 50, x2: x0, y1: Y(v.Ze), y2: Y(v.Ze), style: 'stroke:var(--pipe);stroke-width:2' }, svg);
+    text(svg, x0 - 66, Y(cam.fondo) + wall + 22, 'Ancho de compartimiento (m)', 's', 'end');
+    var xc = x0 + totalB * s + wall + 14, yPrev = -1e9;
+    crestas.sort(function (a, b) { return a.y - b.y; }).forEach(function (k) {
+      var yl = Math.max(k.y + 4, yPrev + 18); yPrev = yl;
+      el('path', { d: 'M' + k.x + ' ' + k.y + 'L' + (xc - 4) + ' ' + (yl - 4), style: 'fill:none;stroke:#8a5a2b;stroke-width:1' }, svg);
+      text(svg, xc, yl, k.t, 'm');
+    });
+    var xr = x0 + totalB * s + 300;
+    text(svg, xr, 80, 'Cámara de entrada', '');
+    text(svg, xr, 100, root.Engine.DESCR.camE[v.camE].t, 's');
+    text(svg, xr, 128, 'Interior ' + f(cam.B) + ' × ' + f(cam.L) + ' m', 'm');
+    text(svg, xr, 148, 'Altura ' + f(cam.H) + ' m · borde libre ' + f(cam.bl) + ' m', 'm');
+    text(svg, xr, 176, 'Separadores: ' + root.Engine.DESCR.sep[v.sep].t.toLowerCase(), 's');
+    text(svg, xr, 194, 'Espesor ' + f(c.cam.e) + ' m', 's');
+    text(svg, xr, 222, 'Corte transversal, mirando aguas abajo', 's');
+    text(svg, xr, 240, 'Conductos llenos: en servicio con ' + o.key, 's');
+    text(svg, xr, 258, 'Conducto 1 sin vertedero: toma Qmin por el fondo', 's');
+    return true;
+  }
+
+  /* ---------- Línea de accesorios de succión e impulsión ---------- */
+  function lineaAcc(host, res) {
+    host.innerHTML = '';
+    var c = res.ctx, v = res.v;
+    if (!c.acc) return false;
+    var W = 1160, H = 400;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Accesorios de succión e impulsión' }, host);
+    var orden = { su: ['entrada_recta', 'entrada_campana', 'codo90', 'codo45', 'v_comp', 'v_mari', 'tee_dir', 'tee_lat', 'union', 'reduccion'], im: ['ampliacion', 'v_cheq', 'v_comp', 'v_mari', 'union', 'tee_lat', 'tee_dir', 'codo90', 'codo45'] };
+    var fila = function (items, y, color, nombre, ini, fin, D) {
+      var lst = orden[nombre === 'Succión' ? 'su' : 'im'].map(function (id) { return items.filter(function (a) { return a.id === id; })[0]; }).filter(Boolean);
+      if (nombre === 'Impulsión') lst.push({ id: 'salida', t: 'Salida al tanque', n: 1, K: 1 });
+      var xa = 170, xb = W - 150;
+      el('line', { x1: xa - 40, x2: xb + 40, y1: y, y2: y, style: 'stroke:' + color + ';stroke-width:10;stroke-linecap:round;opacity:.35' }, svg);
+      text(svg, 20, y - 8, nombre, '');
+      text(svg, 20, y + 12, 'Ø' + f(D, 0) + ' mm', 'm');
+      text(svg, xa - 40, y - 26, ini, 's', 'middle');
+      text(svg, xb + 40, y - 26, fin, 's', 'end');
+      var paso = (xb - xa) / Math.max(lst.length - 1, 1);
+      lst.forEach(function (a, i) {
+        var x = lst.length === 1 ? (xa + xb) / 2 : xa + i * paso;
+        sym(svg, a.id, x, y, color);
+        var dy = i % 2 ? 72 : 34;
+        if (i % 2) el('line', { x1: x, x2: x, y1: y + 14, y2: y + dy - 14, style: 'stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 3' }, svg);
+        text(svg, x, y + dy, a.t.replace(' (retención)', '').replace(' abierta', ''), 's', 'middle');
+        text(svg, x, y + dy + 17, (a.n > 1 ? a.n + ' × ' : '') + 'K ' + f(a.K), 'm', 'middle');
+      });
+      if (!lst.length) text(svg, (xa + xb) / 2, y + 36, c.acc.manual ? 'ΣK escrito por el usuario' : 'Sin accesorios', 's', 'middle');
+    };
+    fila(c.acc.su.items, 70, 'var(--s3)', 'Succión', 'Pozo (boca a ' + f(v.Zboca) + ' m)', 'Bomba', v.Dsu);
+    fila(c.acc.im.items, 250, 'var(--s2)', 'Impulsión', 'Bomba', 'Tanque (salida a ' + f(v.Zimp) + ' m)', v.Dim);
+    text(svg, W - 20, H - 12, 'ΣK succión = ' + f(v.Ksu) + ' por bomba · ΣK impulsión = ' + f(v.Kim) + ' + salida 1,0', 'm', 'end');
+    return true;
+  }
+
+  root.Schemes = { sifon: sifon, bomba: bomba, planta: planta, seccion: seccion, camara: camara, lineaAcc: lineaAcc, sym: sym };
 })(typeof self !== 'undefined' ? self : this);
 </script>
 <script data-m="scene3d">/* Modelado 3D paramétrico con Three.js incluido en el archivo. */
@@ -2784,6 +3528,8 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       var v = res.vals[fd.k];
       if (fd.type === 'sel') { var o = fd.options.filter(function (x) { return x.v === v; })[0]; v = o ? o.t : v; }
       if (fd.type === 'curve') v = String(v).trim().split(/\n+/).join(' | ');
+      var au = res.val.auto[fd.k];
+      if (au) v = f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2)) + ' (autocompletado)';
       rows.push([fd.group, fd.label, v === undefined || v === null || v === '' ? '(falta)' : String(v), fd.unit || '']);
     });
     return rows;
@@ -2835,6 +3581,29 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       r.push(['Arranques por hora en el peor caso', f(c.pozo.arr, 1), '/h']);
     }
     return r;
+  }
+  /* Secciones descriptivas: obstáculo, cámaras, cotas, tuberías, accesorios y arreglos de bombas */
+  function extras(res) {
+    var out = [], n = function (x, d) { return typeof x === 'number' ? f(x, d === undefined ? 2 : d) : String(x); };
+    if (res.autos && res.autos.length) out.push({ t: 'Datos completados automáticamente', hoja: 'Autocompletados', head: ['Dato', 'Valor usado', 'Unidad', 'Procedimiento', 'Fuente'], rows: res.autos.map(function (a) { return [a.label, f(a.v, a.unit === 'mm' ? 0 : (Math.abs(a.v) < 0.1 ? 4 : 2)), a.unit || '', a.how, a.src]; }) });
+    if (res.mod === 'sifon') {
+      var T = E.sifonTablas(res);
+      if (!T) return out;
+      out.push({ t: 'Descripción de las estructuras', hoja: 'Estructuras', head: ['Elemento', 'Tipo', 'Descripción'], rows: T.desc });
+      out.push({ t: 'Tuberías del sifón', hoja: 'Tuberias', head: ['Conducto', 'D int. (mm)', 'Material', 'Área (m²)', 'L real (m)', 'Q Qmin/Qmed/Qmax (L/s)', 'V Qmin/Qmed/Qmax (m/s)', 'Batea ent./sal. (m)', 'Clave punto bajo (m)', 'Función'],
+        rows: T.tubos.map(function (t) { return [String(t.id), f(t.D, 0), t.mat, f(t.A, 4), f(t.L), t.Qs.map(function (q) { return f(q, 1); }).join(' / '), t.Vs.map(function (x) { return x ? f(x) : '—'; }).join(' / '), f(t.bE) + ' / ' + f(t.bS), f(t.clave), t.fn]; }) });
+      out.push({ t: 'Cotas de fondo, de las cámaras y del obstáculo', hoja: 'Cotas', head: ['Elemento', 'Cota (m)', 'Origen'], rows: T.cotas.map(function (r) { return [r[0], f(r[1], 3), r[2]]; }) });
+      out.push({ t: 'Pendientes de las tuberías', hoja: 'Pendientes', head: ['Tramo', 'Long. horizontal (m)', 'Desnivel (m)', 'Pendiente (%)', 'Ángulo (°)', 'Long. real (m)'], rows: T.pend.map(function (r) { return [r[0], n(r[1]), n(r[2]), n(r[3]), n(r[4], 1), n(r[5])]; }) });
+      return out;
+    }
+    var B = E.bombaTablas(res), c = res.ctx;
+    if (c.alt) out.push({ t: 'Bombas en serie o en paralelo', hoja: 'Arreglos', head: ['Arreglo', 'En operación', 'Q (L/s)', 'H (m)', 'η (%)', 'Q/Qd', 'Resultado'], rows: [[c.altTxt, '', '', '', '', '', '']].concat(c.alt.slice(0, 8).map(function (o) { return [E.arregloTxt(o.nP, o.nS) + (o.actual ? ' (actual)' : ''), String(o.total), o.op ? f(o.op.Qt, 1) : '—', o.op ? f(o.op.H) : '—', o.op ? f(o.eta, 1) : '—', o.op ? f(o.op.Qt / res.v.Qd * 100, 0) + ' %' : '—', o.nota]; })) });
+    if (!B) return out;
+    out.push({ t: 'Accesorios de succión e impulsión', hoja: 'Accesorios', head: ['Tubería', 'Accesorio', 'Cantidad', 'K', 'n·K', 'Pérdida (m)'], rows: B.acc.map(function (r) { return [r[0], r[1], n(r[2], 0), n(r[3]), n(r[4]), n(r[5], 3)]; }) });
+    out.push({ t: 'Diferencias entre la tubería de succión y la de impulsión', hoja: 'Tuberias', head: ['Característica', 'Succión', 'Impulsión'], rows: B.tub });
+    out.push({ t: 'Cotas de succión e impulsión', hoja: 'Cotas', head: ['Elemento', 'Cota (m)', 'Origen'], rows: B.cotas.map(function (r) { return [r[0], f(r[1], 2), r[2]]; }) });
+    out.push({ t: 'Tanque de descarga y accesorios', hoja: 'Tanque', head: ['Elemento', 'Tipo', 'Descripción'], rows: B.desc });
+    return out;
   }
   function verifTabla(res) { return res.checks.map(function (c) { return [c.ch.id, c.ch.param, c.value, c.limit, EST[c.estado], c.ch.fuente]; }); }
   function advertTabla(res) {
@@ -2890,6 +3659,16 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         var h = document.createElement('div'); root.innerHTML = ''; root.appendChild(h);
         if (mod === 'sifon') window.Schemes.sifon(h, res, ix); else window.Schemes.bomba(h, res);
         return svgToPng(h.querySelector('svg'), 1400).then(function (im) { if (im) out.push({ t: mod === 'sifon' ? 'Perfil del sifón con ' + ['Qmin', 'Qmed', 'Qmax'][ix] : 'Esquema de la estación de bombeo', url: im.url, ratio: im.ratio }); });
+      });
+    });
+    var extraImg = mod === 'sifon'
+      ? [['planta', 'Vista en planta (Qmax)'], ['seccion', 'Tuberías del sifón: sección en el punto bajo'], ['camara', 'Cámara de entrada: separadores y vertederos']]
+      : [['lineaAcc', 'Accesorios de succión e impulsión']];
+    extraImg.forEach(function (x) {
+      seq = seq.then(function () {
+        var h = document.createElement('div'); root.innerHTML = ''; root.appendChild(h);
+        if (!window.Schemes[x[0]](h, res, 2)) return;
+        return svgToPng(h.querySelector('svg'), 1400).then(function (im) { if (im) out.push({ t: x[1], url: im.url, ratio: im.ratio }); });
       });
     });
     seq = seq.then(function () {
@@ -2975,6 +3754,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         table(['Grupo', 'Parámetro', 'Valor', 'Unidad'], datosTabla(res));
         H2('Resultados');
         table(['Resultado', 'Valor', 'Unidad'], resultadosTabla(res));
+        extras(res).forEach(function (x) { H2(x.t); table(x.head, x.rows, x.head[2] === 'Descripción' ? { columnStyles: { 0: { cellWidth: 32 }, 1: { cellWidth: 38 } } } : {}); });
         H2('Advertencias y sugerencias');
         var ad = advertTabla(res);
         if (ad.length) table(['Parámetro', 'Qué ocurre', 'Fuente', 'Cómo corregir'], ad, { columnStyles: { 0: { cellWidth: 38 }, 2: { cellWidth: 42 } } });
@@ -3059,6 +3839,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         var res = results[mod];
         html += '<h2>' + NOMBRE[mod] + '</h2><h3>Datos de entrada</h3>' + tablaHtml(['Grupo', 'Parámetro', 'Valor', 'Unidad'], datosTabla(res));
         html += '<h3>Resultados</h3>' + tablaHtml(['Resultado', 'Valor', 'Unidad'], resultadosTabla(res));
+        extras(res).forEach(function (x) { html += '<h3>' + e(x.t) + '</h3>' + tablaHtml(x.head, x.rows); });
         var ad = advertTabla(res);
         html += '<h3>Advertencias y sugerencias</h3>' + (ad.length ? tablaHtml(['Parámetro', 'Qué ocurre', 'Fuente', 'Cómo corregir'], ad) : '<p>No hay datos faltantes ni incumplimientos.</p>');
         html += '<h3>Verificaciones</h3>' + tablaHtml(['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente'], verifTabla(res));
@@ -3081,12 +3862,13 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     XLSX.utils.book_append_sheet(wb, ws, nombre);
   }
   function datosHoja(res) {
-    var a = [['Clave', 'Parámetro', 'Valor', 'Unidad', 'Grupo']];
+    var a = [['Clave', 'Parámetro', 'Valor', 'Unidad', 'Grupo', 'Valor usado (si se autocompletó)']];
     E.FIELDS[res.mod].forEach(function (fd) {
       var v = res.vals[fd.k];
       if (fd.type === 'num') { var x = E.parseNum(v); v = isNaN(x) ? (v === undefined ? '' : v) : x; }
       if (fd.type === 'curve') v = String(v).trim().split(/\n+/).join(' | ');
-      a.push([fd.k, fd.label, v, fd.unit || '', fd.group]);
+      var au = res.val.auto[fd.k];
+      a.push([fd.k, fd.label, v, fd.unit || '', fd.group, au ? au.v : '']);
     });
     return a;
   }
@@ -3120,6 +3902,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     hoja(wb, 'Sifon_Perfil', a, [8, 11, 22, 10, 19, 16]);
     hoja(wb, 'Sifon_Verificaciones', [['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente', 'Cómo corregir']].concat(r.sifon.checks.map(function (x) { return [x.ch.id, x.ch.param, x.value, x.limit, EST[x.estado], x.ch.fuente, x.sug]; })), [6, 34, 44, 34, 14, 60, 60]);
     hoja(wb, 'Sifon_Memoria', memoriaHoja(r.sifon), [34, 11, 100, 50]);
+    extras(r.sifon).forEach(function (x) { hoja(wb, ('Sifon_' + x.hoja).slice(0, 31), [x.head].concat(x.rows), x.head.map(function (h, i) { return i === 0 ? 30 : (h === 'Descripción' || h === 'Procedimiento' || h === 'Fuente' ? 70 : 16); })); });
 
     hoja(wb, 'Bomba_Datos', datosHoja(r.bomba), [10, 44, 40, 11, 18]);
     var b = r.bomba.ctx;
@@ -3130,10 +3913,10 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     hoja(wb, 'Bomba_Curva', a, [18, 14, 8, 11, 15]);
     a = [['Q total (L/s)', 'H sistema, nivel mínimo (m)', 'H sistema, nivel máximo (m)', 'H bomba(s) (m)']];
     if (b.op && b.curva) {
-      var qm = b.qMaxCurva * r.bomba.v.nAct;
+      var qm = b.qMaxCurva * r.bomba.v.nAct, nS = r.bomba.v.nSer || 1;
       for (var i = 0; i <= 30; i++) {
         var Q = qm * i / 30, Qp = Q / r.bomba.v.nAct;
-        a.push([Q, E.alturaSistema(Q / 1000, b.HsMax, r.bomba.v, b).H, E.alturaSistema(Q / 1000, b.HsMin, r.bomba.v, b).H, b.fit.A * Qp * Qp + b.fit.B * Qp + b.fit.C]);
+        a.push([Q, E.alturaSistema(Q / 1000, b.HsMax, r.bomba.v, b).H, E.alturaSistema(Q / 1000, b.HsMin, r.bomba.v, b).H, nS * (b.fit.A * Qp * Qp + b.fit.B * Qp + b.fit.C)]);
       }
     }
     hoja(wb, 'Bomba_Sistema', a, [14, 26, 26, 16]);
@@ -3148,6 +3931,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     hoja(wb, 'Bomba_Resultados', a, [26, 12, 9]);
     hoja(wb, 'Bomba_Verificaciones', [['Id', 'Parámetro', 'Valor', 'Límite', 'Estado', 'Fuente', 'Cómo corregir']].concat(r.bomba.checks.map(function (x) { return [x.ch.id, x.ch.param, x.value, x.limit, EST[x.estado], x.ch.fuente, x.sug]; })), [6, 34, 44, 34, 14, 60, 60]);
     hoja(wb, 'Bomba_Memoria', memoriaHoja(r.bomba), [34, 11, 100, 50]);
+    extras(r.bomba).forEach(function (x) { hoja(wb, ('Bomba_' + x.hoja).slice(0, 31), [x.head].concat(x.rows), x.head.map(function (h, i) { return i === 0 ? 30 : (h === 'Descripción' || h === 'Procedimiento' || h === 'Fuente' || h === 'Succión' || h === 'Impulsión' ? 60 : 16); })); });
 
     hoja(wb, 'Matriz_Normativa', [['Id', 'Módulo', 'Parámetro verificado', 'Valor límite', 'Fuente', 'Condición de advertencia', 'Sugerencia', 'Nivel']].concat(matrizRows()), [6, 16, 34, 40, 60, 28, 50, 14]);
     hoja(wb, 'Plan_Pruebas', [['Id', 'Módulo', 'Tipo', 'Caso', 'Resultado esperado', 'Resultado obtenido', 'Advertencia mostrada', 'Resultado']].concat(E.correrPruebas().map(function (t) { return [t.id, NOMBRE[t.mod], t.tipo, t.desc, t.espera, t.obtenido, t.advertencia, t.paso ? 'Pasa' : 'Falla']; })), [8, 16, 14, 40, 40, 40, 70, 9]);
@@ -3197,11 +3981,11 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     { id: 'normas', t: 'Límites normativos' }, { id: 'refs', t: 'Referencias' }, { id: 'pruebas', t: 'Plan de pruebas' }, { id: 'exportar', t: 'Exportar' }, { id: 'ayuda', t: 'Instructivo' }
   ];
   var TABS = [
-    { id: 'resumen', t: 'Resultados' }, { id: 'esquema', t: 'Perfil' }, { id: 'v3d', t: 'Modelo 3D' }, { id: 'graficas', t: 'Gráficas' },
+    { id: 'resumen', t: 'Resultados' }, { id: 'esquema', t: 'Perfil' }, { id: 'detalles', t: 'Planta y detalles', tb: 'Tuberías y accesorios' }, { id: 'v3d', t: 'Modelo 3D' }, { id: 'graficas', t: 'Gráficas' },
     { id: 'cadena', t: 'Cadena de datos' }, { id: 'verif', t: 'Verificaciones' }, { id: 'memoria', t: 'Memoria paso a paso' }
   ];
   var ESTADO = { ok: ['Cumple', 'b-ok', '✓'], fail: ['No cumple', 'b-fail', '✕'], warn: ['Recomendación', 'b-warn', '!'], pend: ['Sin evaluar', 'b-pend', '…'], na: ['No aplica', 'b-na', '–'] };
-  var CAMPO = { S1: 'modo', S2: 'modo', S3: 'modo', S4: 'Ld', S5: 'La', S6: 'Ld', S7: 'Zs', S8: 'modo', S9: 'modo', S10: 'rejilla', S11: 'Zci', S12: 'Zcs', S13: 'De', S14: 'modo', S15: 'modo', B1: 'nInst', B2: 'curva', B3: 'Dsu', B4: 'Dim', B5: 'Zeje', B6: 'Zeje', B7: 'curva', B8: 'curva', B9: 'Zboca', B10: 'Zboca', B11: 'Dsu', B12: 'Dsu', B13: 'Tc', B14: 'PN', B15: 'Tc', B16: 'LB', B17: 'LB', B18: 'Dla', B19: 'Dla', B20: 'LB', B21: 'vfd', B22: 'respaldo', B23: 'curva' };
+  var CAMPO = { S1: 'modo', S2: 'modo', S3: 'modo', S4: 'Ld', S5: 'La', S6: 'Ld', S7: 'Zs', S8: 'modo', S9: 'modo', S10: 'rejilla', S11: 'Zci', S12: 'Zcs', S13: 'De', S14: 'modo', S15: 'modo', B1: 'nInst', B2: 'curva', B3: 'Dsu', B4: 'Dim', B5: 'Zeje', B6: 'Zeje', B7: 'curva', B8: 'curva', B9: 'Zboca', B10: 'Zboca', B11: 'Dsu', B12: 'Dsu', B13: 'Tc', B14: 'PN', B15: 'Tc', B16: 'LB', B17: 'LB', B18: 'Dla', B19: 'Dla', B20: 'LB', B21: 'vfd', B22: 'respaldo', B23: 'curva', S16: 'Zf', S17: 'Lc', S18: 'Ztce', B24: 'Qd', B25: 'Zimp', B26: 'accIm' };
 
   var state = {
     page: 'inicio', vals: { sifon: E.defaults('sifon'), bomba: E.defaults('bomba') }, res: {},
@@ -3294,7 +4078,8 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
   function renderModule(mod) {
     var m = $('#main');
     var titulo = mod === 'sifon' ? 'Sifón invertido' : 'Sistema de bombeo';
-    var desc = mod === 'sifon' ? 'Conductos a presión que cruzan un obstáculo bajo el colector.' : 'Estación que eleva el caudal desde un pozo húmedo hasta la descarga.';
+    var dob = E.DESCR.obst[state.vals.sifon.obst];
+    var desc = mod === 'sifon' ? 'Conductos a presión que cruzan ' + (dob ? 'un obstáculo: ' + dob.t.toLowerCase() : 'un obstáculo') + '. Deje vacío un campo marcado «auto» y se completa con la norma.' : 'Estación que eleva el caudal desde un pozo húmedo hasta el tanque de descarga. Deje vacío un campo «auto» y se completa con la norma.';
     m.innerHTML = '<div class="page-head"><div><h1>' + titulo + '</h1><p>' + desc + '</p></div><div class="chips" id="escenarios"></div></div>' +
       '<div class="status" id="status"></div><div class="mod-grid"><aside class="panel inputs" id="inputs" aria-label="Datos de entrada"></aside>' +
       '<section class="panel" aria-label="Resultados"><div class="tabs" role="tablist" id="tabs"></div><div class="tabpane" id="pane"></div></section></div>';
@@ -3338,12 +4123,32 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
             '<td><button class="icon-btn" title="Quitar fila" aria-label="Quitar fila ' + (i + 1) + '" data-delrow="' + i + '">×</button></td></tr>';
         }).join('') + '</tbody></table><button class="btn sec" id="addRow" style="min-height:28px;padding:2px 9px;font-size:.78rem;margin-top:5px">Agregar punto</button>';
       void rows;
+    } else if (fd.type === 'acc') {
+      var have = {};
+      String(val || '').split(/[;\n]+/).forEach(function (p) { var m = p.trim().match(/^([a-z0-9_]+)\s*=\s*([^@]+?)\s*(?:@\s*(.+))?$/i); if (m) have[m[1]] = { n: m[2], K: m[3] }; });
+      var lista = E.ACC.filter(function (a) { return a.en === 'ambos' || a.en === fd.en; });
+      ctrl = '<table class="curve-table acc-table" data-acck="' + fd.k + '"><thead><tr><th>Accesorio</th><th>Cant.</th><th>K</th></tr></thead><tbody>' +
+        lista.map(function (a) {
+          var h = have[a.id] || {};
+          return '<tr><td style="text-align:left;font-size:.78rem;padding-left:4px">' + esc(a.t) + '</td>' +
+            '<td><input inputmode="numeric" aria-label="Cantidad de ' + esc(a.t) + '" data-acc="' + fd.k + '" data-aid="' + a.id + '" data-col="n" value="' + esc(h.n === undefined ? '0' : h.n) + '"></td>' +
+            '<td><input inputmode="decimal" aria-label="K de ' + esc(a.t) + '" data-acc="' + fd.k + '" data-aid="' + a.id + '" data-col="K" value="' + esc(h.K === undefined ? String(a.K).replace('.', ',') : h.K) + '"></td></tr>';
+        }).join('') + '</tbody></table>';
     } else if (fd.type === 'text') {
       ctrl = '<div class="ctrl"><input id="' + id + '" data-k="' + fd.k + '" value="' + esc(val === undefined ? '' : val) + '"><span class="unit">' + esc(fd.unit) + '</span></div>';
     } else {
       ctrl = '<div class="ctrl"><input id="' + id + '" data-k="' + fd.k + '" inputmode="decimal" value="' + esc(val === undefined || val === null ? '' : val) + '" autocomplete="off"><span class="unit">' + (esc(fd.unit) || '&nbsp;') + '</span></div>';
     }
-    return '<div class="field" id="wrap_' + fd.k + '"><label for="' + id + '">' + esc(fd.label) + (fd.type === 'curve' ? ' <small>(' + esc(fd.unit) + ')</small>' : '') + '</label>' + ctrl + '<div class="err" hidden></div>' + (fd.hint ? '<div class="hint">' + esc(fd.hint) + '</div>' : '') + '</div>';
+    return '<div class="field" id="wrap_' + fd.k + '"><label for="' + id + '">' + esc(fd.label) + (fd.type === 'curve' ? ' <small>(' + esc(fd.unit) + ')</small>' : '') + (fd.auto ? ' <span class="autotag" title="Si lo deja vacío, se completa con la norma o un valor genérico">auto</span>' : '') + '</label>' + ctrl + '<div class="err" hidden></div><div class="autonote" hidden></div>' + (fd.hint ? '<div class="hint">' + esc(fd.hint) + '</div>' : '') + '</div>';
+  }
+  function accDesdeTabla(k) {
+    var items = {};
+    $$('input[data-acc="' + k + '"]').forEach(function (i) { (items[i.dataset.aid] = items[i.dataset.aid] || {})[i.dataset.col] = i.value.trim(); });
+    return Object.keys(items).filter(function (id) { return items[id].n !== '' && items[id].n !== '0'; }).map(function (id) {
+      var a = E.ACC.filter(function (x) { return x.id === id; })[0], K = items[id].K;
+      var Kn = E.parseNum(K);
+      return id + '=' + items[id].n + (K !== '' && !(Kn === a.K) ? '@' + K.replace(',', '.') : '');
+    }).join('; ');
   }
   function updateFieldStates(mod, res) {
     E.FIELDS[mod].forEach(function (fd) {
@@ -3353,6 +4158,13 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       err.hidden = !(bad || miss);
       err.textContent = bad ? 'Este valor ' + bad.why + '.' : (miss ? 'Falta este dato.' : '');
       var input = $('#f_' + fd.k); if (input) input.setAttribute('aria-invalid', bad || miss ? 'true' : 'false');
+      var au = res.val.auto[fd.k], note = $('.autonote', w);
+      w.classList.toggle('isauto', !!au);
+      if (note) {
+        note.hidden = !au;
+        note.innerHTML = au ? '<b>Autocompletado: ' + esc(f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2))) + ' ' + esc(fd.unit || '') + '</b> · ' + esc(au.how) + ' <button class="linkish" data-fix="' + fd.k + '">Escribir este valor</button>' : '';
+      }
+      if (input && input.tagName === 'INPUT') input.placeholder = au ? f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2)) + ' (auto)' : '';
     });
   }
   function refresh(mod, full) {
@@ -3380,7 +4192,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       var cnt = '';
       if (t.id === 'verif' && s.fail + s.warn) cnt = '<span class="count ' + (s.fail ? 'b-fail' : 'b-warn') + '">' + (s.fail + s.warn) + '</span>';
       if (t.id === 'cadena' && s.bloq) cnt = '<span class="count b-pend">' + s.bloq + '</span>';
-      return '<button role="tab" data-tab="' + t.id + '" aria-selected="' + (act === t.id) + '">' + t.t + cnt + '</button>';
+      return '<button role="tab" data-tab="' + t.id + '" aria-selected="' + (act === t.id) + '">' + (mod === 'bomba' && t.tb ? t.tb : t.t) + cnt + '</button>';
     }).join('');
   }
   function renderTab(mod, res) {
@@ -3389,6 +4201,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     if (t !== 'v3d') stop3d(mod);
     if (t === 'resumen') { p.innerHTML = resumenHtml(mod, res); return; }
     if (t === 'esquema') return renderEsquema(p, mod, res);
+    if (t === 'detalles') return renderDetalles(p, mod, res);
     if (t === 'v3d') return render3d(p, mod, res);
     if (t === 'graficas') return renderGraficas(p, mod, res);
     if (t === 'cadena') { p.innerHTML = cadenaHtml(mod, res); return; }
@@ -3425,11 +4238,31 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
         '<div class="src">Fuente: ' + esc(i.src) + '</div></div>';
     }).join('') + '</div>';
   }
+  function autosHtml(res) {
+    if (!res.autos || !res.autos.length) return '';
+    return '<div class="sec-title"><h2>Datos completados automáticamente</h2><small>' + res.autos.length + ' campo(s) vacío(s). Escriba el dato real para reemplazarlo.</small></div><div class="tw"><table class="t"><thead><tr><th>Dato</th><th class="r">Valor usado</th><th>Procedimiento</th><th>Fuente</th><th></th></tr></thead><tbody>' +
+      res.autos.map(function (a) {
+        return '<tr><td>' + esc(a.label) + '</td><td class="num r">' + esc(f(a.v, a.unit === 'mm' ? 0 : (Math.abs(a.v) < 0.1 ? 4 : 2))) + ' ' + esc(a.unit || '') + '</td><td style="min-width:260px">' + esc(a.how) + '</td><td style="font-size:.78rem;color:var(--ink-2);min-width:170px">' + esc(a.src) + '</td><td><button class="linkish" data-goto="' + a.k + '">Ir al dato</button></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function altHtml(res) {
+    var c = res.ctx, v = res.v;
+    if (!c.alt) return '';
+    var cur = c.altCur, ok = cur && cur.optima;
+    var h = '<div class="sec-title"><h2>¿Hacen falta más bombas?</h2><small>Bombas iguales en serie (suman altura) o en paralelo (suman caudal)</small></div>';
+    h += '<div class="' + (ok ? 'allgood' : 'notice') + '" style="margin-bottom:8px">' + (ok ? '✓ ' : '') + esc(c.altTxt) + '</div>';
+    h += '<div class="tw"><table class="t"><thead><tr><th>Arreglo</th><th class="r">En operación</th><th class="r">Q (L/s)</th><th class="r">H (m)</th><th class="r">η (%)</th><th class="r">Q/Qd</th><th>Resultado</th><th></th></tr></thead><tbody>' +
+      c.alt.slice(0, 8).map(function (o, i) {
+        var est = !o.op ? 'fail' : (o.optima ? 'ok' : (o.apta ? 'warn' : 'fail'));
+        return '<tr' + (o.actual ? ' style="background:var(--accent-soft)"' : '') + '><td>' + esc(E.arregloTxt(o.nP, o.nS)) + (o.actual ? ' <b>(actual)</b>' : '') + (i === 0 && !ok ? ' <b>(recomendado)</b>' : '') + '</td><td class="num r">' + o.total + '</td><td class="num r">' + (o.op ? f(o.op.Qt, 1) : '—') + '</td><td class="num r">' + (o.op ? f(o.op.H) : '—') + '</td><td class="num r">' + (o.op ? f(o.eta, 1) : '—') + '</td><td class="num r">' + (o.op ? f(o.op.Qt / v.Qd * 100, 0) + ' %' : '—') + '</td><td>' + badge(est).replace(/Cumple|No cumple|Recomendación/, est === 'ok' ? 'Óptimo' : (est === 'warn' ? 'Sirve' : 'No sirve')) + ' <small>' + esc(o.nota) + '</small></td><td>' + (o.actual || !o.op ? '' : '<button class="btn sec" style="min-height:26px;padding:2px 8px;font-size:.76rem" data-apply="' + o.nP + ',' + o.nS + '">Usar</button>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    return h;
+  }
   function kpi(l, val, u, sub) { return '<div class="kpi"><label>' + esc(l) + '</label><b>' + val + (u ? '<small>' + esc(u) + '</small>' : '') + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</div>'; }
 
   function resumenHtml(mod, res) {
     var c = res.ctx, h = '';
-    var head = '<div class="sec-title"><h2>Qué falta o qué corregir</h2><small>Parámetro, límite, fuente y corrección</small></div>' + issuesHtml(mod, res);
+    var head = '<div class="sec-title"><h2>Qué falta o qué corregir</h2><small>Parámetro, límite, fuente y corrección</small></div>' + issuesHtml(mod, res) + autosHtml(res);
     if (mod === 'sifon') {
       if (!c.casos || !c.casos[0].NAe) return head;
       var q = c.casos[2];
@@ -3458,8 +4291,9 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       }
       return h;
     }
-    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.pozo) return head;
-    h += '<div class="kpis">' + kpi('Punto de operación', f(c.op.Qt, 1), 'L/s', 'H = ' + f(c.op.H) + ' m') +
+    var altB = altHtml(res);
+    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.pozo) return head + altB;
+    h += '<div class="kpis">' + kpi('Punto de operación', f(c.op.Qt, 1), 'L/s', 'H = ' + f(c.op.H) + ' m · Qd = ' + f(res.v.Qd, 1) + ' L/s') +
       kpi('Potencia por bomba', f(c.pot.Pe), 'kW', 'Eléctrica ' + f(c.pot.Pm) + ' kW') +
       kpi('Eficiencia', f(c.pot.eta, 1), '%', 'Conjunto ' + f(c.pot.etaConj, 1) + ' %') +
       kpi('NPSH disponible', f(c.npsh.a), 'm', 'Requerido ' + f(c.npsh.r) + ' m') +
@@ -3467,7 +4301,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       kpi('Sumergencia', f(c.sum.S), 'm', '2,5·Ds = ' + f(c.sum.req25) + ' m') +
       kpi('Golpe de ariete', f(c.ar.dH), 'm', (c.ar.rapido ? 'Joukowsky' : 'Michaud') + ' · a = ' + f(c.ar.a, 0) + ' m/s') +
       kpi('Volumen útil', f(c.pozo.Vol, 1), 'm³', 'Mínimo ' + f(c.pozo.Vreq, 1) + ' m³') + '</div>';
-    h += head;
+    h += head + altB;
     h += '<div class="sec-title"><h2>Altura dinámica total</h2><small>TDH = Hs + Hf + Hv + Hl (HEC-22 Ec. 12.1)</small></div><div class="tw"><table class="t"><thead><tr><th>Condición</th><th class="r">Q (L/s)</th><th class="r">Hs (m)</th><th class="r">Hf (m)</th><th class="r">Hv (m)</th><th class="r">Hl (m)</th><th class="r">TDH (m)</th></tr></thead><tbody>';
     var rowOf = function (name, Q, Hs) { var s = E.alturaSistema(Q / 1000, Hs, res.v, c); return '<tr><td>' + name + '</td>' + [f(Q, 1), f(s.Hs), f(s.Hf, 3), f(s.Hv, 3), f(s.Hl, 3), f(s.H)].map(function (x) { return '<td class="num r">' + x + '</td>'; }).join('') + '</tr>'; };
     h += rowOf('Caudal de diseño, nivel mínimo', res.v.Qd, c.HsMax) + rowOf('Operación, nivel mínimo', c.op.Qt, c.HsMax);
@@ -3489,6 +4323,41 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     p.innerHTML = '<div class="scheme-bar"><div><h2>' + (mod === 'sifon' ? 'Perfil y cotas del sifón' : 'Esquema de la estación de bombeo') + '</h2><div class="scale-note">Se redibuja con los valores calculados. El flujo se mueve según la velocidad real.</div></div>' + (mod === 'sifon' ? casoChips() : '') + '</div><div class="scheme" id="schemeHost"></div>';
     var host = $('#schemeHost');
     if (mod === 'sifon') S.sifon(host, res, state.caso); else S.bomba(host, res);
+  }
+
+  /* ---------- Planta y detalles ---------- */
+  function tablaSimple(head, rows, numCols) {
+    numCols = numCols || [];
+    return '<div class="tw"><table class="t"><thead><tr>' + head.map(function (x, i) { return '<th' + (numCols.indexOf(i) >= 0 ? ' class="r"' : '') + '>' + (String(x).charAt(0) === '<' ? x : esc(x)) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr>' + r.map(function (x, i) { return '<td' + (numCols.indexOf(i) >= 0 ? ' class="num r"' : '') + '>' + x + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  }
+  var nf = function (x, d) { return typeof x === 'number' ? f(x, d === undefined ? 2 : d) : esc(x); };
+  function renderDetalles(p, mod, res) {
+    var c = res.ctx, v = res.v, h = '';
+    if (mod === 'sifon') {
+      var T = E.sifonTablas(res);
+      if (!T || !res.complete) { p.innerHTML = blockedMsg(res, 'la planta y los detalles'); return; }
+      h += '<div class="scheme-bar"><div><h2>Vista en planta</h2><div class="scale-note">Conductos en paralelo, cámaras con sus compartimientos y el obstáculo que se cruza.</div></div>' + casoChips() + '</div><div class="scheme" id="hPlanta"></div>';
+      h += '<div class="sec-title"><h2>Tuberías del sifón</h2><small>Diámetros y parámetros de cada conducto</small></div><div class="scheme" id="hSeccion"></div>';
+      h += tablaSimple(['Conducto', 'D interno (mm)', 'Material', 'Área (m²)', 'L real (m)', 'Q Qmin/Qmed/Qmax (L/s)', 'V Qmin/Qmed/Qmax (m/s)', 'Tope de caudal', 'Batea entrada / salida (m)', 'Clave punto bajo (m)', 'Función'],
+        T.tubos.map(function (t) { return [String(t.id), f(t.D, 0), esc(t.mat), f(t.A, 4), f(t.L), t.Qs.map(function (q) { return f(q, 1); }).join(' / '), t.Vs.map(function (x) { return x ? f(x) : '—'; }).join(' / '), t.tope === null ? '—' : (isFinite(t.tope) ? f(t.tope * 1000, 1) + ' L/s' : 'El resto'), f(t.bE) + ' / ' + f(t.bS), f(t.clave), esc(t.fn)]; }), [1, 3, 4]);
+      h += '<div class="sec-title"><h2>Cámara de entrada: separadores y vertederos</h2></div><div class="scheme" id="hCamara"></div>';
+      h += '<div class="sec-title"><h2>Descripción de las estructuras</h2><small>Cambie los tipos en "Obstáculo" y "Cámaras y separadores"</small></div>' + tablaSimple(['Elemento', 'Tipo', 'Descripción'], T.desc.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+      h += '<div class="sec-title"><h2>Cotas de fondo, de las cámaras y del obstáculo</h2><small>De aguas arriba a aguas abajo</small></div>' + tablaSimple(['Elemento', 'Cota (m)', 'Origen'], T.cotas.map(function (r) { return [esc(r[0]), f(r[1], 3), esc(r[2])]; }), [1]);
+      h += '<div class="sec-title"><h2>Pendientes de las tuberías</h2><small>θ ≤ 22,5° (Art. 158.4) y subida ≤ 15 % (HEC-22)</small></div>' + tablaSimple(['Tramo', 'Long. horizontal (m)', 'Desnivel (m)', 'Pendiente (%)', 'Ángulo (°)', 'Long. real (m)'], T.pend.map(function (r) { return [esc(r[0]), nf(r[1]), nf(r[2]), nf(r[3]), nf(r[4], 1), nf(r[5])]; }), [1, 2, 3, 4, 5]);
+      p.innerHTML = h;
+      S.planta($('#hPlanta'), res, state.caso); S.seccion($('#hSeccion'), res, state.caso); S.camara($('#hCamara'), res, state.caso);
+      return;
+    }
+    var B = E.bombaTablas(res);
+    if (!B) { p.innerHTML = blockedMsg(res, 'las tuberías y accesorios'); return; }
+    h += '<div class="scheme-bar"><div><h2>Accesorios de succión e impulsión</h2><div class="scale-note">En el orden del flujo, desde el pozo hasta el tanque de descarga. Cámbielos en la tabla de cada tubería.</div></div></div><div class="scheme" id="hAcc"></div>';
+    h += tablaSimple(['Tubería', 'Accesorio', 'Cantidad', 'K', 'n·K', 'Pérdida (m)'], B.acc.map(function (r) { return ['<span style="color:var(' + (r[0] === 'Succión' ? '--s3' : '--s2') + ');font-weight:700">' + esc(r[0]) + '</span>', esc(r[1]), nf(r[2], 0), nf(r[3]), nf(r[4]), nf(r[5], 3)]; }), [2, 3, 4, 5]);
+    h += '<div class="sec-title"><h2>Diferencias entre la tubería de succión y la de impulsión</h2><small>Con el punto de operación</small></div>' + tablaSimple(['Característica', '<span style="color:var(--s3)">Succión</span>', '<span style="color:var(--s2)">Impulsión</span>'], B.tub.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+    h += '<div class="sec-title"><h2>Cotas de succión e impulsión</h2></div>' + tablaSimple(['Elemento', 'Cota (m)', 'Origen'], B.cotas.map(function (r) { return [esc(r[0]), f(r[1], 2), esc(r[2])]; }), [1]);
+    h += '<div class="sec-title"><h2>Tanque de descarga y accesorios</h2></div>' + tablaSimple(['Elemento', 'Tipo', 'Descripción'], B.desc.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+    p.innerHTML = h;
+    S.lineaAcc($('#hAcc'), res);
   }
 
   /* ---------- 3D ---------- */
@@ -3577,36 +4446,59 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       });
       return;
     }
+    var nSer0 = v.nSer || 1;
+    if (c.alt && c.fit && c.sis) {
+      var confs = [[1, 1], [2, 1], [1, 2]], bst = c.altBest, cols = ['--s1', '--s3', '--s5', '--s4'];
+      if (bst && bst.op && !confs.some(function (q) { return q[0] === bst.nP && q[1] === bst.nS; })) confs.push([bst.nP, bst.nS]);
+      if (!confs.some(function (q) { return q[0] === v.nAct && q[1] === nSer0; })) confs.push([v.nAct, nSer0]);
+      var qR = Math.max.apply(null, confs.map(function (q) { return q[0]; })) * c.qMaxCurva * 1.05;
+      var sys = [], ser = [], mk = [], yMx = 0;
+      for (var a = 0; a <= 60; a++) { var qa = qR * a / 60; sys.push([qa, E.alturaSistema(qa / 1000, c.HsMax, v, c).H]); }
+      confs.slice(0, 5).forEach(function (q, i) {
+        var pts = [];
+        for (var b = 0; b <= 60; b++) { var qq = q[0] * c.qMaxCurva * 1.05 * b / 60, qp = qq / q[0], h1 = c.fit.A * qp * qp + c.fit.B * qp + c.fit.C; if (h1 > 0) pts.push([qq, h1 * q[1]]); }
+        pts.forEach(function (p) { yMx = Math.max(yMx, p[1]); });
+        var o = c.alt.filter(function (x) { return x.nP === q[0] && x.nS === q[1]; })[0];
+        ser.push({ name: E.arregloTxt(q[0], q[1]).replace(/^una sola bomba$/, '1 bomba'), color: cols[i % 4], dash: i > 3, pts: pts });
+        if (o && o.op) mk.push({ x: o.op.Qt, y: o.op.H, label: q[0] + '×' + q[1], color: cols[i % 4], pulse: q[0] === v.nAct && q[1] === nSer0 });
+      });
+      ser.push({ name: 'Sistema, nivel mínimo', color: '--s2', pts: sys.filter(function (p) { return p[1] <= yMx * 1.1; }) });
+      C.xy(add(), {
+        title: 'Bombas en serie o en paralelo', sub: 'En paralelo la curva se estira en caudal; en serie, en altura. ' + c.altTxt, xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0, ymax: yMx * 1.1,
+        series: ser, marks: mk, vlines: [{ x: v.Qd, color: '--ink-3', label: 'Qd = ' + f(v.Qd, 1) + ' L/s' }]
+      });
+    }
+    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.sum) return;
     var Qmax = c.qMaxCurva * v.nAct * 1.1, nPts = 50, sysMin = [], sysMax = [], pump = [], etaC = [], powC = [], npa = [], npr = [];
     for (var j = 0; j <= nPts; j++) {
       var Q = Qmax * j / nPts, Qp = Q / v.nAct;
       sysMin.push([Q, E.alturaSistema(Q / 1000, c.HsMax, v, c).H]);
       sysMax.push([Q, E.alturaSistema(Q / 1000, c.HsMin, v, c).H]);
-      var H = c.fit.A * Qp * Qp + c.fit.B * Qp + c.fit.C;
-      if (H > 0 && Qp <= c.qMaxCurva * 1.1) pump.push([Q, H]);
+      var H1 = c.fit.A * Qp * Qp + c.fit.B * Qp + c.fit.C, H = H1 * (v.nSer || 1);
+      if (H1 > 0 && Qp <= c.qMaxCurva * 1.1) pump.push([Q, H]);
       var et = E.interpCol(c.curva, 'eta', Qp);
       if (Qp <= c.qMaxCurva) {
         etaC.push([Qp, et]);
-        if (et > 0.5) powC.push([Qp, c.w.gamma * (Qp / 1000) * Math.max(H, 0) / (et / 100) / 1000]);
+        if (et > 0.5) powC.push([Qp, c.w.gamma * (Qp / 1000) * Math.max(H1, 0) / (et / 100) / 1000]);
         var s = E.alturaSistema(Q / 1000, c.HsMax, v, c).s;
         npa.push([Qp, c.npsh.patm + c.npsh.Hes - (s.hf + s.hm) - c.npsh.pv]);
         npr.push([Qp, E.interpCol(c.curva, 'npshr', Qp)]);
       }
     }
-    var yTop = Math.max(c.fit.C, c.op.H) * 1.3;
+    var nS = v.nSer || 1, yTop = Math.max(c.fit.C * nS, c.op.H) * 1.3;
     C.xy(add(), {
-      title: 'Punto de operación', sub: v.nAct + ' bomba(s) en paralelo sobre la curva del sistema', xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, ymax: yTop, xmin: 0,
+      title: 'Curva de altura H-Q y punto de operación', sub: E.arregloTxt(v.nAct, nS) + ' sobre la curva del sistema. Qd = ' + f(v.Qd, 1) + ' L/s', xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, ymax: yTop, xmin: 0,
       series: [
-        { name: 'Curva de la bomba', color: '--s1', pts: pump },
+        { name: 'Curva de la bomba' + (v.nAct * nS > 1 ? ' (arreglo)' : ''), color: '--s1', pts: pump },
         { name: 'Sistema, nivel mínimo', color: '--s2', pts: sysMin.filter(function (p) { return p[1] <= yTop; }) },
         { name: 'Sistema, nivel máximo', color: '--s2', dash: true, pts: sysMax.filter(function (p) { return p[1] <= yTop; }) },
-        { name: 'Datos del catálogo', color: '--s3', pointsOnly: true, pts: c.curva.map(function (p) { return [p.Q * v.nAct, p.H]; }) }
+        { name: 'Datos del catálogo', color: '--s3', pointsOnly: true, pts: c.curva.map(function (p) { return [p.Q * v.nAct, p.H * nS]; }) }
       ],
       marks: [{ x: c.op.Qt, y: c.op.H, label: 'Q = ' + f(c.op.Qt, 1) + ' L/s, H = ' + f(c.op.H) + ' m', color: '--ink', pulse: true }],
       hlines: [{ y: c.HsMax, color: '--ink-3', label: 'Hs = ' + f(c.HsMax) + ' m' }]
     });
     C.xy(add(), {
-      title: 'Eficiencia de la bomba', sub: 'Interpolada en la curva suministrada', xlabel: 'Caudal por bomba (L/s)', ylabel: 'η (%)', xunit: 'L/s', yunit: '%', ymin: 0, xmin: 0, ydec: 1,
+      title: 'Curva de eficiencia η-Q', sub: 'Interpolada en la curva suministrada, por bomba', xlabel: 'Caudal por bomba (L/s)', ylabel: 'η (%)', xunit: 'L/s', yunit: '%', ymin: 0, xmin: 0, ydec: 1,
       series: [{ name: 'Eficiencia', color: '--s1', pts: etaC }],
       marks: [{ x: c.op.Qp, y: c.pot.eta, label: 'η = ' + f(c.pot.eta, 1) + ' %', color: '--ink', pulse: true }]
     });
@@ -3616,7 +4508,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       marks: [{ x: c.op.Qp, y: c.pot.Pe, label: 'P = ' + f(c.pot.Pe) + ' kW', color: '--ink', pulse: true }]
     });
     C.xy(add(), {
-      title: 'NPSH disponible y requerido', sub: 'El disponible debe superar al requerido en al menos 0,5 m (Art. 161)', xlabel: 'Caudal por bomba (L/s)', ylabel: 'NPSH (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0,
+      title: 'Curva de NPSH disponible y requerido', sub: 'El disponible debe superar al requerido en al menos 0,5 m (Art. 161)', xlabel: 'Caudal por bomba (L/s)', ylabel: 'NPSH (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0,
       series: [{ name: 'NPSH disponible', color: '--s1', pts: npa }, { name: 'NPSH requerido', color: '--s2', pts: npr }],
       marks: [{ x: c.op.Qp, y: c.npsh.a, label: 'NPSHd = ' + f(c.npsh.a) + ' m', color: '--s1', pulse: true }, { x: c.op.Qp, y: c.npsh.r, label: 'NPSHr = ' + f(c.npsh.r) + ' m', color: '--s2' }]
     });
@@ -3640,9 +4532,10 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     });
   }
   function renderGraficas(p, mod, res) {
-    var ok = mod === 'sifon' ? res.ctx.perfil : (res.ctx.op && res.ctx.pot && res.ctx.npsh && res.ctx.ar && res.ctx.sum);
-    if (!ok || !res.complete) { p.innerHTML = blockedMsg(res, 'las gráficas'); return; }
-    p.innerHTML = (mod === 'sifon' ? '<div class="scheme-bar"><span></span>' + casoChips() + '</div>' : '') + '<div class="charts" id="chartsHost"></div>';
+    var ok = mod === 'sifon' ? (res.ctx.perfil && res.complete) : (res.ctx.alt && res.ctx.fit && res.ctx.sis);
+    if (!ok) { p.innerHTML = blockedMsg(res, 'las gráficas'); return; }
+    var parcial = mod === 'bomba' && !res.complete;
+    p.innerHTML = (mod === 'sifon' ? '<div class="scheme-bar"><span></span>' + casoChips() + '</div>' : '') + (parcial ? blockedMsg(res, 'todas las gráficas').replace('todavía.', 'todavía: abajo está la comparación de arreglos de bombas.') : '') + '<div class="charts" id="chartsHost"></div>';
     drawCharts(mod, res, $('#chartsHost'));
   }
 
@@ -3739,7 +4632,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     var rows = state.pruebas || E.correrPruebas();
     state.pruebas = rows;
     var pasa = rows.filter(function (r) { return r.paso; }).length;
-    m.innerHTML = '<div class="page-head"><div><h1>Plan de pruebas</h1><p>Se ejecuta sobre el mismo motor de cálculo. Incluye datos normales, en el límite, fuera de norma e inválidos, con 10 casos por módulo.</p></div><button class="btn" id="btnRun">Ejecutar de nuevo</button></div>' +
+    m.innerHTML = '<div class="page-head"><div><h1>Plan de pruebas</h1><p>Se ejecuta sobre el mismo motor de cálculo. Incluye datos normales, en el límite, fuera de norma, inválidos y con autocompletado: ' + rows.filter(function (r) { return r.mod === 'sifon'; }).length + ' casos del sifón y ' + rows.filter(function (r) { return r.mod === 'bomba'; }).length + ' del bombeo.</p></div><button class="btn" id="btnRun">Ejecutar de nuevo</button></div>' +
       '<div class="allgood" style="margin-bottom:12px;' + (pasa === rows.length ? '' : 'background:var(--bad-soft);color:var(--bad)') + '">' + pasa + ' de ' + rows.length + ' pruebas con el resultado esperado.</div>' +
       '<div class="tw"><table class="t"><thead><tr><th>Id</th><th>Tipo</th><th>Caso</th><th>Esperado</th><th>Obtenido</th><th>Advertencia mostrada</th><th>Resultado</th></tr></thead><tbody>' +
       rows.map(function (r) { return '<tr><td class="num">' + r.id + '</td><td>' + r.tipo + '</td><td>' + esc(r.desc) + '</td><td>' + esc(r.espera) + '</td><td>' + esc(r.obtenido) + '</td><td style="font-size:.8rem;min-width:220px">' + esc(r.advertencia) + '</td><td>' + (r.paso ? badge('ok').replace('Cumple', 'Pasa') : badge('fail').replace('No cumple', 'Falla')) + '</td></tr>'; }).join('') + '</tbody></table></div>';
@@ -3762,13 +4655,14 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
   function renderAyuda(m) {
     m.innerHTML = '<div class="page-head"><div><h1>Instructivo de uso</h1><p>Esta misma guía está en el archivo Instructivo_de_uso.pdf, de una página.</p></div></div><div class="req-grid">' + [
       ['1. Abrir', 'Haga doble clic en Sifones_invertidos_y_sistemas_de_bombeo.html. Abre en Chrome, Edge o Firefox, sin instalar nada y sin internet.'],
-      ['2. Escribir datos', 'Entre al módulo y llene los datos de la izquierda. Puede usar coma o punto decimal. Cada campo muestra su unidad.'],
+      ['2. Escribir datos', 'Entre al módulo y llene los datos de la izquierda. Puede usar coma o punto decimal. Los campos marcados AUTO se pueden dejar vacíos: se completan con la norma y muestran el procedimiento.'],
       ['3. Leer el estado', 'La franja superior resume el diseño. En Resultados, la sección "Qué falta o qué corregir" explica cada problema y lleva al dato.'],
       ['4. Seguir la cadena', 'La pestaña Cadena de datos muestra qué paso quedó bloqueado, por cuál dato y qué depende de él.'],
-      ['5. Ver el diseño', 'Perfil, Modelo 3D y Gráficas se redibujan con sus valores. Cambie entre Qmin, Qmed y Qmax para ver el servicio progresivo.'],
+      ['5. Ver el diseño', 'Perfil, Planta y detalles (o Tuberías y accesorios), Modelo 3D y Gráficas se redibujan con sus valores. Cambie entre Qmin, Qmed y Qmax para ver el servicio progresivo.'],
       ['6. Verificar a mano', 'La Memoria paso a paso trae la fórmula con los números reemplazados para comprobar con calculadora.'],
       ['7. Exportar', 'Use los botones PDF y Excel de la barra superior. En Exportar puede escribir la portada, imprimir o traer datos de un Excel.'],
-      ['8. Probar casos', 'Los botones "Cargar caso" traen ejemplos que cumplen, en el límite, fuera de norma e inválidos.']
+      ['8. Probar casos', 'Los botones "Cargar caso" traen ejemplos que cumplen, en el límite, fuera de norma, con datos mínimos, con una bomba que no alcanza e inválidos.'],
+      ['9. Bombas en serie o paralelo', 'Si la curva de la bomba no da el caudal o la altura, Resultados compara arreglos y el botón Usar aplica el recomendado.']
     ].map(function (r) { return '<div class="req"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="notice" style="margin-top:14px"><b>Lo que debe entregar el grupo además de esta aplicación (guía, numeral 8):</b> memoria manual del caso de verificación y comparación con la aplicación (máximo 1 % de diferencia), bitácora de IA con mínimo cinco errores registrados, declaración firmada, video de máximo 5 minutos y coevaluación.</div>';
   }
@@ -3811,6 +4705,21 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
       renderScenarios(m2); renderInputs(m2); return refresh(m2);
     }
     if (d.goto) return gotoField(d.goto);
+    if (d.fix) {
+      var mf = currentMod(), au = state.res[mf] && state.res[mf].val.auto[d.fix];
+      if (!au) return;
+      state.vals[mf][d.fix] = String(Math.round(au.v * 10000) / 10000).replace('.', ',');
+      state.esc[mf] = null; renderScenarios(mf); renderInputs(mf); refresh(mf);
+      return toast('Se escribió el valor autocompletado en "' + au.field.label + '".');
+    }
+    if (d.apply) {
+      var ma = currentMod(), pr = d.apply.split(',').map(Number), va = state.vals[ma];
+      va.nAct = pr[0]; va.nSer = pr[1];
+      var nInst = E.parseNum(va.nInst);
+      if (!(nInst >= pr[0] * pr[1] + 1)) va.nInst = pr[0] * pr[1] + 1;
+      state.esc[ma] = null; renderScenarios(ma); renderInputs(ma); refresh(ma);
+      return toast('Arreglo aplicado: ' + E.arregloTxt(pr[0], pr[1]) + ', ' + va.nInst + ' instaladas con la reserva.');
+    }
     if (d.jump) { var n = $('#node_' + d.jump); if (n) { n.scrollIntoView({ behavior: 'smooth', block: 'center' }); $('details', n).open = true; } return; }
     if (d.filtro) { state.filtro = d.filtro; return renderPage(); }
     if (d.delrow !== undefined) {
@@ -3847,6 +4756,7 @@ parse_Primary(n.content)}catch(l){}a="/EncryptionInfo";n=Qe.find(e,a);if(!n||!n.
     var t = e.target, mod = currentMod();
     if (t.dataset.meta) { state.meta[t.dataset.meta] = t.value; store('meta', state.meta); return; }
     if (!mod) return;
+    if (t.dataset.acc) { state.vals[mod][t.dataset.acc] = accDesdeTabla(t.dataset.acc); if (state.esc[mod]) { state.esc[mod] = null; renderScenarios(mod); } return schedule(mod); }
     if (t.dataset.cv !== undefined) { state.vals[mod].curva = curvaDesdeTabla(); state.esc[mod] = null; renderScenarios(mod); return schedule(mod); }
     if (t.dataset.k && t.tagName !== 'SELECT') { state.vals[mod][t.dataset.k] = t.value; if (state.esc[mod]) { state.esc[mod] = null; renderScenarios(mod); } schedule(mod); }
   });

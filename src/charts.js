@@ -68,6 +68,10 @@
       el('line', { x1: m.l, x2: W - m.r, y1: py(l.y), y2: py(l.y), style: 'stroke:var(' + l.color + ');stroke-width:1.5;stroke-dasharray:6 4' }, f.svg);
       var t = el('text', { x: W - m.r - 3, y: py(l.y) - 5, 'text-anchor': 'end', class: 'lbl s' }, f.svg); t.textContent = l.label;
     });
+    (cfg.vlines || []).forEach(function (l) {
+      el('line', { x1: px(l.x), x2: px(l.x), y1: m.t, y2: H - m.b, style: 'stroke:var(' + l.color + ');stroke-width:1.5;stroke-dasharray:6 4' }, f.svg);
+      var t = el('text', { x: px(l.x) + 4, y: m.t + 12, 'text-anchor': 'start', class: 'lbl s' }, f.svg); t.textContent = l.label;
+    });
     cfg.series.forEach(function (s) {
       if (s.pointsOnly) {
         s.pts.forEach(function (p) { el('circle', { cx: px(p[0]), cy: py(p[1]), r: 4.5, style: 'fill:var(' + s.color + ');stroke:var(--surface);stroke-width:2' }, f.svg); });

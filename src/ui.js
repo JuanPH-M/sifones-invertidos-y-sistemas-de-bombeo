@@ -11,11 +11,11 @@
     { id: 'normas', t: 'Límites normativos' }, { id: 'refs', t: 'Referencias' }, { id: 'pruebas', t: 'Plan de pruebas' }, { id: 'exportar', t: 'Exportar' }, { id: 'ayuda', t: 'Instructivo' }
   ];
   var TABS = [
-    { id: 'resumen', t: 'Resultados' }, { id: 'esquema', t: 'Perfil' }, { id: 'v3d', t: 'Modelo 3D' }, { id: 'graficas', t: 'Gráficas' },
+    { id: 'resumen', t: 'Resultados' }, { id: 'esquema', t: 'Perfil' }, { id: 'detalles', t: 'Planta y detalles', tb: 'Tuberías y accesorios' }, { id: 'v3d', t: 'Modelo 3D' }, { id: 'graficas', t: 'Gráficas' },
     { id: 'cadena', t: 'Cadena de datos' }, { id: 'verif', t: 'Verificaciones' }, { id: 'memoria', t: 'Memoria paso a paso' }
   ];
   var ESTADO = { ok: ['Cumple', 'b-ok', '✓'], fail: ['No cumple', 'b-fail', '✕'], warn: ['Recomendación', 'b-warn', '!'], pend: ['Sin evaluar', 'b-pend', '…'], na: ['No aplica', 'b-na', '–'] };
-  var CAMPO = { S1: 'modo', S2: 'modo', S3: 'modo', S4: 'Ld', S5: 'La', S6: 'Ld', S7: 'Zs', S8: 'modo', S9: 'modo', S10: 'rejilla', S11: 'Zci', S12: 'Zcs', S13: 'De', S14: 'modo', S15: 'modo', B1: 'nInst', B2: 'curva', B3: 'Dsu', B4: 'Dim', B5: 'Zeje', B6: 'Zeje', B7: 'curva', B8: 'curva', B9: 'Zboca', B10: 'Zboca', B11: 'Dsu', B12: 'Dsu', B13: 'Tc', B14: 'PN', B15: 'Tc', B16: 'LB', B17: 'LB', B18: 'Dla', B19: 'Dla', B20: 'LB', B21: 'vfd', B22: 'respaldo', B23: 'curva' };
+  var CAMPO = { S1: 'modo', S2: 'modo', S3: 'modo', S4: 'Ld', S5: 'La', S6: 'Ld', S7: 'Zs', S8: 'modo', S9: 'modo', S10: 'rejilla', S11: 'Zci', S12: 'Zcs', S13: 'De', S14: 'modo', S15: 'modo', B1: 'nInst', B2: 'curva', B3: 'Dsu', B4: 'Dim', B5: 'Zeje', B6: 'Zeje', B7: 'curva', B8: 'curva', B9: 'Zboca', B10: 'Zboca', B11: 'Dsu', B12: 'Dsu', B13: 'Tc', B14: 'PN', B15: 'Tc', B16: 'LB', B17: 'LB', B18: 'Dla', B19: 'Dla', B20: 'LB', B21: 'vfd', B22: 'respaldo', B23: 'curva', S16: 'Zf', S17: 'Lc', S18: 'Ztce', B24: 'Qd', B25: 'Zimp', B26: 'accIm' };
 
   var state = {
     page: 'inicio', vals: { sifon: E.defaults('sifon'), bomba: E.defaults('bomba') }, res: {},
@@ -108,7 +108,8 @@
   function renderModule(mod) {
     var m = $('#main');
     var titulo = mod === 'sifon' ? 'Sifón invertido' : 'Sistema de bombeo';
-    var desc = mod === 'sifon' ? 'Conductos a presión que cruzan un obstáculo bajo el colector.' : 'Estación que eleva el caudal desde un pozo húmedo hasta la descarga.';
+    var dob = E.DESCR.obst[state.vals.sifon.obst];
+    var desc = mod === 'sifon' ? 'Conductos a presión que cruzan ' + (dob ? 'un obstáculo: ' + dob.t.toLowerCase() : 'un obstáculo') + '. Deje vacío un campo marcado «auto» y se completa con la norma.' : 'Estación que eleva el caudal desde un pozo húmedo hasta el tanque de descarga. Deje vacío un campo «auto» y se completa con la norma.';
     m.innerHTML = '<div class="page-head"><div><h1>' + titulo + '</h1><p>' + desc + '</p></div><div class="chips" id="escenarios"></div></div>' +
       '<div class="status" id="status"></div><div class="mod-grid"><aside class="panel inputs" id="inputs" aria-label="Datos de entrada"></aside>' +
       '<section class="panel" aria-label="Resultados"><div class="tabs" role="tablist" id="tabs"></div><div class="tabpane" id="pane"></div></section></div>';
@@ -152,12 +153,32 @@
             '<td><button class="icon-btn" title="Quitar fila" aria-label="Quitar fila ' + (i + 1) + '" data-delrow="' + i + '">×</button></td></tr>';
         }).join('') + '</tbody></table><button class="btn sec" id="addRow" style="min-height:28px;padding:2px 9px;font-size:.78rem;margin-top:5px">Agregar punto</button>';
       void rows;
+    } else if (fd.type === 'acc') {
+      var have = {};
+      String(val || '').split(/[;\n]+/).forEach(function (p) { var m = p.trim().match(/^([a-z0-9_]+)\s*=\s*([^@]+?)\s*(?:@\s*(.+))?$/i); if (m) have[m[1]] = { n: m[2], K: m[3] }; });
+      var lista = E.ACC.filter(function (a) { return a.en === 'ambos' || a.en === fd.en; });
+      ctrl = '<table class="curve-table acc-table" data-acck="' + fd.k + '"><thead><tr><th>Accesorio</th><th>Cant.</th><th>K</th></tr></thead><tbody>' +
+        lista.map(function (a) {
+          var h = have[a.id] || {};
+          return '<tr><td style="text-align:left;font-size:.78rem;padding-left:4px">' + esc(a.t) + '</td>' +
+            '<td><input inputmode="numeric" aria-label="Cantidad de ' + esc(a.t) + '" data-acc="' + fd.k + '" data-aid="' + a.id + '" data-col="n" value="' + esc(h.n === undefined ? '0' : h.n) + '"></td>' +
+            '<td><input inputmode="decimal" aria-label="K de ' + esc(a.t) + '" data-acc="' + fd.k + '" data-aid="' + a.id + '" data-col="K" value="' + esc(h.K === undefined ? String(a.K).replace('.', ',') : h.K) + '"></td></tr>';
+        }).join('') + '</tbody></table>';
     } else if (fd.type === 'text') {
       ctrl = '<div class="ctrl"><input id="' + id + '" data-k="' + fd.k + '" value="' + esc(val === undefined ? '' : val) + '"><span class="unit">' + esc(fd.unit) + '</span></div>';
     } else {
       ctrl = '<div class="ctrl"><input id="' + id + '" data-k="' + fd.k + '" inputmode="decimal" value="' + esc(val === undefined || val === null ? '' : val) + '" autocomplete="off"><span class="unit">' + (esc(fd.unit) || '&nbsp;') + '</span></div>';
     }
-    return '<div class="field" id="wrap_' + fd.k + '"><label for="' + id + '">' + esc(fd.label) + (fd.type === 'curve' ? ' <small>(' + esc(fd.unit) + ')</small>' : '') + '</label>' + ctrl + '<div class="err" hidden></div>' + (fd.hint ? '<div class="hint">' + esc(fd.hint) + '</div>' : '') + '</div>';
+    return '<div class="field" id="wrap_' + fd.k + '"><label for="' + id + '">' + esc(fd.label) + (fd.type === 'curve' ? ' <small>(' + esc(fd.unit) + ')</small>' : '') + (fd.auto ? ' <span class="autotag" title="Si lo deja vacío, se completa con la norma o un valor genérico">auto</span>' : '') + '</label>' + ctrl + '<div class="err" hidden></div><div class="autonote" hidden></div>' + (fd.hint ? '<div class="hint">' + esc(fd.hint) + '</div>' : '') + '</div>';
+  }
+  function accDesdeTabla(k) {
+    var items = {};
+    $$('input[data-acc="' + k + '"]').forEach(function (i) { (items[i.dataset.aid] = items[i.dataset.aid] || {})[i.dataset.col] = i.value.trim(); });
+    return Object.keys(items).filter(function (id) { return items[id].n !== '' && items[id].n !== '0'; }).map(function (id) {
+      var a = E.ACC.filter(function (x) { return x.id === id; })[0], K = items[id].K;
+      var Kn = E.parseNum(K);
+      return id + '=' + items[id].n + (K !== '' && !(Kn === a.K) ? '@' + K.replace(',', '.') : '');
+    }).join('; ');
   }
   function updateFieldStates(mod, res) {
     E.FIELDS[mod].forEach(function (fd) {
@@ -167,6 +188,13 @@
       err.hidden = !(bad || miss);
       err.textContent = bad ? 'Este valor ' + bad.why + '.' : (miss ? 'Falta este dato.' : '');
       var input = $('#f_' + fd.k); if (input) input.setAttribute('aria-invalid', bad || miss ? 'true' : 'false');
+      var au = res.val.auto[fd.k], note = $('.autonote', w);
+      w.classList.toggle('isauto', !!au);
+      if (note) {
+        note.hidden = !au;
+        note.innerHTML = au ? '<b>Autocompletado: ' + esc(f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2))) + ' ' + esc(fd.unit || '') + '</b> · ' + esc(au.how) + ' <button class="linkish" data-fix="' + fd.k + '">Escribir este valor</button>' : '';
+      }
+      if (input && input.tagName === 'INPUT') input.placeholder = au ? f(au.v, fd.unit === 'mm' ? 0 : (Math.abs(au.v) < 0.1 ? 4 : 2)) + ' (auto)' : '';
     });
   }
   function refresh(mod, full) {
@@ -194,7 +222,7 @@
       var cnt = '';
       if (t.id === 'verif' && s.fail + s.warn) cnt = '<span class="count ' + (s.fail ? 'b-fail' : 'b-warn') + '">' + (s.fail + s.warn) + '</span>';
       if (t.id === 'cadena' && s.bloq) cnt = '<span class="count b-pend">' + s.bloq + '</span>';
-      return '<button role="tab" data-tab="' + t.id + '" aria-selected="' + (act === t.id) + '">' + t.t + cnt + '</button>';
+      return '<button role="tab" data-tab="' + t.id + '" aria-selected="' + (act === t.id) + '">' + (mod === 'bomba' && t.tb ? t.tb : t.t) + cnt + '</button>';
     }).join('');
   }
   function renderTab(mod, res) {
@@ -203,6 +231,7 @@
     if (t !== 'v3d') stop3d(mod);
     if (t === 'resumen') { p.innerHTML = resumenHtml(mod, res); return; }
     if (t === 'esquema') return renderEsquema(p, mod, res);
+    if (t === 'detalles') return renderDetalles(p, mod, res);
     if (t === 'v3d') return render3d(p, mod, res);
     if (t === 'graficas') return renderGraficas(p, mod, res);
     if (t === 'cadena') { p.innerHTML = cadenaHtml(mod, res); return; }
@@ -239,11 +268,31 @@
         '<div class="src">Fuente: ' + esc(i.src) + '</div></div>';
     }).join('') + '</div>';
   }
+  function autosHtml(res) {
+    if (!res.autos || !res.autos.length) return '';
+    return '<div class="sec-title"><h2>Datos completados automáticamente</h2><small>' + res.autos.length + ' campo(s) vacío(s). Escriba el dato real para reemplazarlo.</small></div><div class="tw"><table class="t"><thead><tr><th>Dato</th><th class="r">Valor usado</th><th>Procedimiento</th><th>Fuente</th><th></th></tr></thead><tbody>' +
+      res.autos.map(function (a) {
+        return '<tr><td>' + esc(a.label) + '</td><td class="num r">' + esc(f(a.v, a.unit === 'mm' ? 0 : (Math.abs(a.v) < 0.1 ? 4 : 2))) + ' ' + esc(a.unit || '') + '</td><td style="min-width:260px">' + esc(a.how) + '</td><td style="font-size:.78rem;color:var(--ink-2);min-width:170px">' + esc(a.src) + '</td><td><button class="linkish" data-goto="' + a.k + '">Ir al dato</button></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  function altHtml(res) {
+    var c = res.ctx, v = res.v;
+    if (!c.alt) return '';
+    var cur = c.altCur, ok = cur && cur.optima;
+    var h = '<div class="sec-title"><h2>¿Hacen falta más bombas?</h2><small>Bombas iguales en serie (suman altura) o en paralelo (suman caudal)</small></div>';
+    h += '<div class="' + (ok ? 'allgood' : 'notice') + '" style="margin-bottom:8px">' + (ok ? '✓ ' : '') + esc(c.altTxt) + '</div>';
+    h += '<div class="tw"><table class="t"><thead><tr><th>Arreglo</th><th class="r">En operación</th><th class="r">Q (L/s)</th><th class="r">H (m)</th><th class="r">η (%)</th><th class="r">Q/Qd</th><th>Resultado</th><th></th></tr></thead><tbody>' +
+      c.alt.slice(0, 8).map(function (o, i) {
+        var est = !o.op ? 'fail' : (o.optima ? 'ok' : (o.apta ? 'warn' : 'fail'));
+        return '<tr' + (o.actual ? ' style="background:var(--accent-soft)"' : '') + '><td>' + esc(E.arregloTxt(o.nP, o.nS)) + (o.actual ? ' <b>(actual)</b>' : '') + (i === 0 && !ok ? ' <b>(recomendado)</b>' : '') + '</td><td class="num r">' + o.total + '</td><td class="num r">' + (o.op ? f(o.op.Qt, 1) : '—') + '</td><td class="num r">' + (o.op ? f(o.op.H) : '—') + '</td><td class="num r">' + (o.op ? f(o.eta, 1) : '—') + '</td><td class="num r">' + (o.op ? f(o.op.Qt / v.Qd * 100, 0) + ' %' : '—') + '</td><td>' + badge(est).replace(/Cumple|No cumple|Recomendación/, est === 'ok' ? 'Óptimo' : (est === 'warn' ? 'Sirve' : 'No sirve')) + ' <small>' + esc(o.nota) + '</small></td><td>' + (o.actual || !o.op ? '' : '<button class="btn sec" style="min-height:26px;padding:2px 8px;font-size:.76rem" data-apply="' + o.nP + ',' + o.nS + '">Usar</button>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    return h;
+  }
   function kpi(l, val, u, sub) { return '<div class="kpi"><label>' + esc(l) + '</label><b>' + val + (u ? '<small>' + esc(u) + '</small>' : '') + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</div>'; }
 
   function resumenHtml(mod, res) {
     var c = res.ctx, h = '';
-    var head = '<div class="sec-title"><h2>Qué falta o qué corregir</h2><small>Parámetro, límite, fuente y corrección</small></div>' + issuesHtml(mod, res);
+    var head = '<div class="sec-title"><h2>Qué falta o qué corregir</h2><small>Parámetro, límite, fuente y corrección</small></div>' + issuesHtml(mod, res) + autosHtml(res);
     if (mod === 'sifon') {
       if (!c.casos || !c.casos[0].NAe) return head;
       var q = c.casos[2];
@@ -272,8 +321,9 @@
       }
       return h;
     }
-    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.pozo) return head;
-    h += '<div class="kpis">' + kpi('Punto de operación', f(c.op.Qt, 1), 'L/s', 'H = ' + f(c.op.H) + ' m') +
+    var altB = altHtml(res);
+    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.pozo) return head + altB;
+    h += '<div class="kpis">' + kpi('Punto de operación', f(c.op.Qt, 1), 'L/s', 'H = ' + f(c.op.H) + ' m · Qd = ' + f(res.v.Qd, 1) + ' L/s') +
       kpi('Potencia por bomba', f(c.pot.Pe), 'kW', 'Eléctrica ' + f(c.pot.Pm) + ' kW') +
       kpi('Eficiencia', f(c.pot.eta, 1), '%', 'Conjunto ' + f(c.pot.etaConj, 1) + ' %') +
       kpi('NPSH disponible', f(c.npsh.a), 'm', 'Requerido ' + f(c.npsh.r) + ' m') +
@@ -281,7 +331,7 @@
       kpi('Sumergencia', f(c.sum.S), 'm', '2,5·Ds = ' + f(c.sum.req25) + ' m') +
       kpi('Golpe de ariete', f(c.ar.dH), 'm', (c.ar.rapido ? 'Joukowsky' : 'Michaud') + ' · a = ' + f(c.ar.a, 0) + ' m/s') +
       kpi('Volumen útil', f(c.pozo.Vol, 1), 'm³', 'Mínimo ' + f(c.pozo.Vreq, 1) + ' m³') + '</div>';
-    h += head;
+    h += head + altB;
     h += '<div class="sec-title"><h2>Altura dinámica total</h2><small>TDH = Hs + Hf + Hv + Hl (HEC-22 Ec. 12.1)</small></div><div class="tw"><table class="t"><thead><tr><th>Condición</th><th class="r">Q (L/s)</th><th class="r">Hs (m)</th><th class="r">Hf (m)</th><th class="r">Hv (m)</th><th class="r">Hl (m)</th><th class="r">TDH (m)</th></tr></thead><tbody>';
     var rowOf = function (name, Q, Hs) { var s = E.alturaSistema(Q / 1000, Hs, res.v, c); return '<tr><td>' + name + '</td>' + [f(Q, 1), f(s.Hs), f(s.Hf, 3), f(s.Hv, 3), f(s.Hl, 3), f(s.H)].map(function (x) { return '<td class="num r">' + x + '</td>'; }).join('') + '</tr>'; };
     h += rowOf('Caudal de diseño, nivel mínimo', res.v.Qd, c.HsMax) + rowOf('Operación, nivel mínimo', c.op.Qt, c.HsMax);
@@ -303,6 +353,41 @@
     p.innerHTML = '<div class="scheme-bar"><div><h2>' + (mod === 'sifon' ? 'Perfil y cotas del sifón' : 'Esquema de la estación de bombeo') + '</h2><div class="scale-note">Se redibuja con los valores calculados. El flujo se mueve según la velocidad real.</div></div>' + (mod === 'sifon' ? casoChips() : '') + '</div><div class="scheme" id="schemeHost"></div>';
     var host = $('#schemeHost');
     if (mod === 'sifon') S.sifon(host, res, state.caso); else S.bomba(host, res);
+  }
+
+  /* ---------- Planta y detalles ---------- */
+  function tablaSimple(head, rows, numCols) {
+    numCols = numCols || [];
+    return '<div class="tw"><table class="t"><thead><tr>' + head.map(function (x, i) { return '<th' + (numCols.indexOf(i) >= 0 ? ' class="r"' : '') + '>' + (String(x).charAt(0) === '<' ? x : esc(x)) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr>' + r.map(function (x, i) { return '<td' + (numCols.indexOf(i) >= 0 ? ' class="num r"' : '') + '>' + x + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  }
+  var nf = function (x, d) { return typeof x === 'number' ? f(x, d === undefined ? 2 : d) : esc(x); };
+  function renderDetalles(p, mod, res) {
+    var c = res.ctx, v = res.v, h = '';
+    if (mod === 'sifon') {
+      var T = E.sifonTablas(res);
+      if (!T || !res.complete) { p.innerHTML = blockedMsg(res, 'la planta y los detalles'); return; }
+      h += '<div class="scheme-bar"><div><h2>Vista en planta</h2><div class="scale-note">Conductos en paralelo, cámaras con sus compartimientos y el obstáculo que se cruza.</div></div>' + casoChips() + '</div><div class="scheme" id="hPlanta"></div>';
+      h += '<div class="sec-title"><h2>Tuberías del sifón</h2><small>Diámetros y parámetros de cada conducto</small></div><div class="scheme" id="hSeccion"></div>';
+      h += tablaSimple(['Conducto', 'D interno (mm)', 'Material', 'Área (m²)', 'L real (m)', 'Q Qmin/Qmed/Qmax (L/s)', 'V Qmin/Qmed/Qmax (m/s)', 'Tope de caudal', 'Batea entrada / salida (m)', 'Clave punto bajo (m)', 'Función'],
+        T.tubos.map(function (t) { return [String(t.id), f(t.D, 0), esc(t.mat), f(t.A, 4), f(t.L), t.Qs.map(function (q) { return f(q, 1); }).join(' / '), t.Vs.map(function (x) { return x ? f(x) : '—'; }).join(' / '), t.tope === null ? '—' : (isFinite(t.tope) ? f(t.tope * 1000, 1) + ' L/s' : 'El resto'), f(t.bE) + ' / ' + f(t.bS), f(t.clave), esc(t.fn)]; }), [1, 3, 4]);
+      h += '<div class="sec-title"><h2>Cámara de entrada: separadores y vertederos</h2></div><div class="scheme" id="hCamara"></div>';
+      h += '<div class="sec-title"><h2>Descripción de las estructuras</h2><small>Cambie los tipos en "Obstáculo" y "Cámaras y separadores"</small></div>' + tablaSimple(['Elemento', 'Tipo', 'Descripción'], T.desc.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+      h += '<div class="sec-title"><h2>Cotas de fondo, de las cámaras y del obstáculo</h2><small>De aguas arriba a aguas abajo</small></div>' + tablaSimple(['Elemento', 'Cota (m)', 'Origen'], T.cotas.map(function (r) { return [esc(r[0]), f(r[1], 3), esc(r[2])]; }), [1]);
+      h += '<div class="sec-title"><h2>Pendientes de las tuberías</h2><small>θ ≤ 22,5° (Art. 158.4) y subida ≤ 15 % (HEC-22)</small></div>' + tablaSimple(['Tramo', 'Long. horizontal (m)', 'Desnivel (m)', 'Pendiente (%)', 'Ángulo (°)', 'Long. real (m)'], T.pend.map(function (r) { return [esc(r[0]), nf(r[1]), nf(r[2]), nf(r[3]), nf(r[4], 1), nf(r[5])]; }), [1, 2, 3, 4, 5]);
+      p.innerHTML = h;
+      S.planta($('#hPlanta'), res, state.caso); S.seccion($('#hSeccion'), res, state.caso); S.camara($('#hCamara'), res, state.caso);
+      return;
+    }
+    var B = E.bombaTablas(res);
+    if (!B) { p.innerHTML = blockedMsg(res, 'las tuberías y accesorios'); return; }
+    h += '<div class="scheme-bar"><div><h2>Accesorios de succión e impulsión</h2><div class="scale-note">En el orden del flujo, desde el pozo hasta el tanque de descarga. Cámbielos en la tabla de cada tubería.</div></div></div><div class="scheme" id="hAcc"></div>';
+    h += tablaSimple(['Tubería', 'Accesorio', 'Cantidad', 'K', 'n·K', 'Pérdida (m)'], B.acc.map(function (r) { return ['<span style="color:var(' + (r[0] === 'Succión' ? '--s3' : '--s2') + ');font-weight:700">' + esc(r[0]) + '</span>', esc(r[1]), nf(r[2], 0), nf(r[3]), nf(r[4]), nf(r[5], 3)]; }), [2, 3, 4, 5]);
+    h += '<div class="sec-title"><h2>Diferencias entre la tubería de succión y la de impulsión</h2><small>Con el punto de operación</small></div>' + tablaSimple(['Característica', '<span style="color:var(--s3)">Succión</span>', '<span style="color:var(--s2)">Impulsión</span>'], B.tub.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+    h += '<div class="sec-title"><h2>Cotas de succión e impulsión</h2></div>' + tablaSimple(['Elemento', 'Cota (m)', 'Origen'], B.cotas.map(function (r) { return [esc(r[0]), f(r[1], 2), esc(r[2])]; }), [1]);
+    h += '<div class="sec-title"><h2>Tanque de descarga y accesorios</h2></div>' + tablaSimple(['Elemento', 'Tipo', 'Descripción'], B.desc.map(function (r) { return ['<b>' + esc(r[0]) + '</b>', esc(r[1]), esc(r[2])]; }));
+    p.innerHTML = h;
+    S.lineaAcc($('#hAcc'), res);
   }
 
   /* ---------- 3D ---------- */
@@ -391,36 +476,59 @@
       });
       return;
     }
+    var nSer0 = v.nSer || 1;
+    if (c.alt && c.fit && c.sis) {
+      var confs = [[1, 1], [2, 1], [1, 2]], bst = c.altBest, cols = ['--s1', '--s3', '--s5', '--s4'];
+      if (bst && bst.op && !confs.some(function (q) { return q[0] === bst.nP && q[1] === bst.nS; })) confs.push([bst.nP, bst.nS]);
+      if (!confs.some(function (q) { return q[0] === v.nAct && q[1] === nSer0; })) confs.push([v.nAct, nSer0]);
+      var qR = Math.max.apply(null, confs.map(function (q) { return q[0]; })) * c.qMaxCurva * 1.05;
+      var sys = [], ser = [], mk = [], yMx = 0;
+      for (var a = 0; a <= 60; a++) { var qa = qR * a / 60; sys.push([qa, E.alturaSistema(qa / 1000, c.HsMax, v, c).H]); }
+      confs.slice(0, 5).forEach(function (q, i) {
+        var pts = [];
+        for (var b = 0; b <= 60; b++) { var qq = q[0] * c.qMaxCurva * 1.05 * b / 60, qp = qq / q[0], h1 = c.fit.A * qp * qp + c.fit.B * qp + c.fit.C; if (h1 > 0) pts.push([qq, h1 * q[1]]); }
+        pts.forEach(function (p) { yMx = Math.max(yMx, p[1]); });
+        var o = c.alt.filter(function (x) { return x.nP === q[0] && x.nS === q[1]; })[0];
+        ser.push({ name: E.arregloTxt(q[0], q[1]).replace(/^una sola bomba$/, '1 bomba'), color: cols[i % 4], dash: i > 3, pts: pts });
+        if (o && o.op) mk.push({ x: o.op.Qt, y: o.op.H, label: q[0] + '×' + q[1], color: cols[i % 4], pulse: q[0] === v.nAct && q[1] === nSer0 });
+      });
+      ser.push({ name: 'Sistema, nivel mínimo', color: '--s2', pts: sys.filter(function (p) { return p[1] <= yMx * 1.1; }) });
+      C.xy(add(), {
+        title: 'Bombas en serie o en paralelo', sub: 'En paralelo la curva se estira en caudal; en serie, en altura. ' + c.altTxt, xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0, ymax: yMx * 1.1,
+        series: ser, marks: mk, vlines: [{ x: v.Qd, color: '--ink-3', label: 'Qd = ' + f(v.Qd, 1) + ' L/s' }]
+      });
+    }
+    if (!c.op || !c.pot || !c.npsh || !c.ar || !c.sum) return;
     var Qmax = c.qMaxCurva * v.nAct * 1.1, nPts = 50, sysMin = [], sysMax = [], pump = [], etaC = [], powC = [], npa = [], npr = [];
     for (var j = 0; j <= nPts; j++) {
       var Q = Qmax * j / nPts, Qp = Q / v.nAct;
       sysMin.push([Q, E.alturaSistema(Q / 1000, c.HsMax, v, c).H]);
       sysMax.push([Q, E.alturaSistema(Q / 1000, c.HsMin, v, c).H]);
-      var H = c.fit.A * Qp * Qp + c.fit.B * Qp + c.fit.C;
-      if (H > 0 && Qp <= c.qMaxCurva * 1.1) pump.push([Q, H]);
+      var H1 = c.fit.A * Qp * Qp + c.fit.B * Qp + c.fit.C, H = H1 * (v.nSer || 1);
+      if (H1 > 0 && Qp <= c.qMaxCurva * 1.1) pump.push([Q, H]);
       var et = E.interpCol(c.curva, 'eta', Qp);
       if (Qp <= c.qMaxCurva) {
         etaC.push([Qp, et]);
-        if (et > 0.5) powC.push([Qp, c.w.gamma * (Qp / 1000) * Math.max(H, 0) / (et / 100) / 1000]);
+        if (et > 0.5) powC.push([Qp, c.w.gamma * (Qp / 1000) * Math.max(H1, 0) / (et / 100) / 1000]);
         var s = E.alturaSistema(Q / 1000, c.HsMax, v, c).s;
         npa.push([Qp, c.npsh.patm + c.npsh.Hes - (s.hf + s.hm) - c.npsh.pv]);
         npr.push([Qp, E.interpCol(c.curva, 'npshr', Qp)]);
       }
     }
-    var yTop = Math.max(c.fit.C, c.op.H) * 1.3;
+    var nS = v.nSer || 1, yTop = Math.max(c.fit.C * nS, c.op.H) * 1.3;
     C.xy(add(), {
-      title: 'Punto de operación', sub: v.nAct + ' bomba(s) en paralelo sobre la curva del sistema', xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, ymax: yTop, xmin: 0,
+      title: 'Curva de altura H-Q y punto de operación', sub: E.arregloTxt(v.nAct, nS) + ' sobre la curva del sistema. Qd = ' + f(v.Qd, 1) + ' L/s', xlabel: 'Caudal total (L/s)', ylabel: 'Altura (m)', xunit: 'L/s', yunit: 'm', ymin: 0, ymax: yTop, xmin: 0,
       series: [
-        { name: 'Curva de la bomba', color: '--s1', pts: pump },
+        { name: 'Curva de la bomba' + (v.nAct * nS > 1 ? ' (arreglo)' : ''), color: '--s1', pts: pump },
         { name: 'Sistema, nivel mínimo', color: '--s2', pts: sysMin.filter(function (p) { return p[1] <= yTop; }) },
         { name: 'Sistema, nivel máximo', color: '--s2', dash: true, pts: sysMax.filter(function (p) { return p[1] <= yTop; }) },
-        { name: 'Datos del catálogo', color: '--s3', pointsOnly: true, pts: c.curva.map(function (p) { return [p.Q * v.nAct, p.H]; }) }
+        { name: 'Datos del catálogo', color: '--s3', pointsOnly: true, pts: c.curva.map(function (p) { return [p.Q * v.nAct, p.H * nS]; }) }
       ],
       marks: [{ x: c.op.Qt, y: c.op.H, label: 'Q = ' + f(c.op.Qt, 1) + ' L/s, H = ' + f(c.op.H) + ' m', color: '--ink', pulse: true }],
       hlines: [{ y: c.HsMax, color: '--ink-3', label: 'Hs = ' + f(c.HsMax) + ' m' }]
     });
     C.xy(add(), {
-      title: 'Eficiencia de la bomba', sub: 'Interpolada en la curva suministrada', xlabel: 'Caudal por bomba (L/s)', ylabel: 'η (%)', xunit: 'L/s', yunit: '%', ymin: 0, xmin: 0, ydec: 1,
+      title: 'Curva de eficiencia η-Q', sub: 'Interpolada en la curva suministrada, por bomba', xlabel: 'Caudal por bomba (L/s)', ylabel: 'η (%)', xunit: 'L/s', yunit: '%', ymin: 0, xmin: 0, ydec: 1,
       series: [{ name: 'Eficiencia', color: '--s1', pts: etaC }],
       marks: [{ x: c.op.Qp, y: c.pot.eta, label: 'η = ' + f(c.pot.eta, 1) + ' %', color: '--ink', pulse: true }]
     });
@@ -430,7 +538,7 @@
       marks: [{ x: c.op.Qp, y: c.pot.Pe, label: 'P = ' + f(c.pot.Pe) + ' kW', color: '--ink', pulse: true }]
     });
     C.xy(add(), {
-      title: 'NPSH disponible y requerido', sub: 'El disponible debe superar al requerido en al menos 0,5 m (Art. 161)', xlabel: 'Caudal por bomba (L/s)', ylabel: 'NPSH (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0,
+      title: 'Curva de NPSH disponible y requerido', sub: 'El disponible debe superar al requerido en al menos 0,5 m (Art. 161)', xlabel: 'Caudal por bomba (L/s)', ylabel: 'NPSH (m)', xunit: 'L/s', yunit: 'm', ymin: 0, xmin: 0,
       series: [{ name: 'NPSH disponible', color: '--s1', pts: npa }, { name: 'NPSH requerido', color: '--s2', pts: npr }],
       marks: [{ x: c.op.Qp, y: c.npsh.a, label: 'NPSHd = ' + f(c.npsh.a) + ' m', color: '--s1', pulse: true }, { x: c.op.Qp, y: c.npsh.r, label: 'NPSHr = ' + f(c.npsh.r) + ' m', color: '--s2' }]
     });
@@ -454,9 +562,10 @@
     });
   }
   function renderGraficas(p, mod, res) {
-    var ok = mod === 'sifon' ? res.ctx.perfil : (res.ctx.op && res.ctx.pot && res.ctx.npsh && res.ctx.ar && res.ctx.sum);
-    if (!ok || !res.complete) { p.innerHTML = blockedMsg(res, 'las gráficas'); return; }
-    p.innerHTML = (mod === 'sifon' ? '<div class="scheme-bar"><span></span>' + casoChips() + '</div>' : '') + '<div class="charts" id="chartsHost"></div>';
+    var ok = mod === 'sifon' ? (res.ctx.perfil && res.complete) : (res.ctx.alt && res.ctx.fit && res.ctx.sis);
+    if (!ok) { p.innerHTML = blockedMsg(res, 'las gráficas'); return; }
+    var parcial = mod === 'bomba' && !res.complete;
+    p.innerHTML = (mod === 'sifon' ? '<div class="scheme-bar"><span></span>' + casoChips() + '</div>' : '') + (parcial ? blockedMsg(res, 'todas las gráficas').replace('todavía.', 'todavía: abajo está la comparación de arreglos de bombas.') : '') + '<div class="charts" id="chartsHost"></div>';
     drawCharts(mod, res, $('#chartsHost'));
   }
 
@@ -553,7 +662,7 @@
     var rows = state.pruebas || E.correrPruebas();
     state.pruebas = rows;
     var pasa = rows.filter(function (r) { return r.paso; }).length;
-    m.innerHTML = '<div class="page-head"><div><h1>Plan de pruebas</h1><p>Se ejecuta sobre el mismo motor de cálculo. Incluye datos normales, en el límite, fuera de norma e inválidos, con 10 casos por módulo.</p></div><button class="btn" id="btnRun">Ejecutar de nuevo</button></div>' +
+    m.innerHTML = '<div class="page-head"><div><h1>Plan de pruebas</h1><p>Se ejecuta sobre el mismo motor de cálculo. Incluye datos normales, en el límite, fuera de norma, inválidos y con autocompletado: ' + rows.filter(function (r) { return r.mod === 'sifon'; }).length + ' casos del sifón y ' + rows.filter(function (r) { return r.mod === 'bomba'; }).length + ' del bombeo.</p></div><button class="btn" id="btnRun">Ejecutar de nuevo</button></div>' +
       '<div class="allgood" style="margin-bottom:12px;' + (pasa === rows.length ? '' : 'background:var(--bad-soft);color:var(--bad)') + '">' + pasa + ' de ' + rows.length + ' pruebas con el resultado esperado.</div>' +
       '<div class="tw"><table class="t"><thead><tr><th>Id</th><th>Tipo</th><th>Caso</th><th>Esperado</th><th>Obtenido</th><th>Advertencia mostrada</th><th>Resultado</th></tr></thead><tbody>' +
       rows.map(function (r) { return '<tr><td class="num">' + r.id + '</td><td>' + r.tipo + '</td><td>' + esc(r.desc) + '</td><td>' + esc(r.espera) + '</td><td>' + esc(r.obtenido) + '</td><td style="font-size:.8rem;min-width:220px">' + esc(r.advertencia) + '</td><td>' + (r.paso ? badge('ok').replace('Cumple', 'Pasa') : badge('fail').replace('No cumple', 'Falla')) + '</td></tr>'; }).join('') + '</tbody></table></div>';
@@ -576,13 +685,14 @@
   function renderAyuda(m) {
     m.innerHTML = '<div class="page-head"><div><h1>Instructivo de uso</h1><p>Esta misma guía está en el archivo Instructivo_de_uso.pdf, de una página.</p></div></div><div class="req-grid">' + [
       ['1. Abrir', 'Haga doble clic en Sifones_invertidos_y_sistemas_de_bombeo.html. Abre en Chrome, Edge o Firefox, sin instalar nada y sin internet.'],
-      ['2. Escribir datos', 'Entre al módulo y llene los datos de la izquierda. Puede usar coma o punto decimal. Cada campo muestra su unidad.'],
+      ['2. Escribir datos', 'Entre al módulo y llene los datos de la izquierda. Puede usar coma o punto decimal. Los campos marcados AUTO se pueden dejar vacíos: se completan con la norma y muestran el procedimiento.'],
       ['3. Leer el estado', 'La franja superior resume el diseño. En Resultados, la sección "Qué falta o qué corregir" explica cada problema y lleva al dato.'],
       ['4. Seguir la cadena', 'La pestaña Cadena de datos muestra qué paso quedó bloqueado, por cuál dato y qué depende de él.'],
-      ['5. Ver el diseño', 'Perfil, Modelo 3D y Gráficas se redibujan con sus valores. Cambie entre Qmin, Qmed y Qmax para ver el servicio progresivo.'],
+      ['5. Ver el diseño', 'Perfil, Planta y detalles (o Tuberías y accesorios), Modelo 3D y Gráficas se redibujan con sus valores. Cambie entre Qmin, Qmed y Qmax para ver el servicio progresivo.'],
       ['6. Verificar a mano', 'La Memoria paso a paso trae la fórmula con los números reemplazados para comprobar con calculadora.'],
       ['7. Exportar', 'Use los botones PDF y Excel de la barra superior. En Exportar puede escribir la portada, imprimir o traer datos de un Excel.'],
-      ['8. Probar casos', 'Los botones "Cargar caso" traen ejemplos que cumplen, en el límite, fuera de norma e inválidos.']
+      ['8. Probar casos', 'Los botones "Cargar caso" traen ejemplos que cumplen, en el límite, fuera de norma, con datos mínimos, con una bomba que no alcanza e inválidos.'],
+      ['9. Bombas en serie o paralelo', 'Si la curva de la bomba no da el caudal o la altura, Resultados compara arreglos y el botón Usar aplica el recomendado.']
     ].map(function (r) { return '<div class="req"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="notice" style="margin-top:14px"><b>Lo que debe entregar el grupo además de esta aplicación (guía, numeral 8):</b> memoria manual del caso de verificación y comparación con la aplicación (máximo 1 % de diferencia), bitácora de IA con mínimo cinco errores registrados, declaración firmada, video de máximo 5 minutos y coevaluación.</div>';
   }
@@ -625,6 +735,21 @@
       renderScenarios(m2); renderInputs(m2); return refresh(m2);
     }
     if (d.goto) return gotoField(d.goto);
+    if (d.fix) {
+      var mf = currentMod(), au = state.res[mf] && state.res[mf].val.auto[d.fix];
+      if (!au) return;
+      state.vals[mf][d.fix] = String(Math.round(au.v * 10000) / 10000).replace('.', ',');
+      state.esc[mf] = null; renderScenarios(mf); renderInputs(mf); refresh(mf);
+      return toast('Se escribió el valor autocompletado en "' + au.field.label + '".');
+    }
+    if (d.apply) {
+      var ma = currentMod(), pr = d.apply.split(',').map(Number), va = state.vals[ma];
+      va.nAct = pr[0]; va.nSer = pr[1];
+      var nInst = E.parseNum(va.nInst);
+      if (!(nInst >= pr[0] * pr[1] + 1)) va.nInst = pr[0] * pr[1] + 1;
+      state.esc[ma] = null; renderScenarios(ma); renderInputs(ma); refresh(ma);
+      return toast('Arreglo aplicado: ' + E.arregloTxt(pr[0], pr[1]) + ', ' + va.nInst + ' instaladas con la reserva.');
+    }
     if (d.jump) { var n = $('#node_' + d.jump); if (n) { n.scrollIntoView({ behavior: 'smooth', block: 'center' }); $('details', n).open = true; } return; }
     if (d.filtro) { state.filtro = d.filtro; return renderPage(); }
     if (d.delrow !== undefined) {
@@ -661,6 +786,7 @@
     var t = e.target, mod = currentMod();
     if (t.dataset.meta) { state.meta[t.dataset.meta] = t.value; store('meta', state.meta); return; }
     if (!mod) return;
+    if (t.dataset.acc) { state.vals[mod][t.dataset.acc] = accDesdeTabla(t.dataset.acc); if (state.esc[mod]) { state.esc[mod] = null; renderScenarios(mod); } return schedule(mod); }
     if (t.dataset.cv !== undefined) { state.vals[mod].curva = curvaDesdeTabla(); state.esc[mod] = null; renderScenarios(mod); return schedule(mod); }
     if (t.dataset.k && t.tagName !== 'SELECT') { state.vals[mod][t.dataset.k] = t.value; if (state.esc[mod]) { state.esc[mod] = null; renderScenarios(mod); } schedule(mod); }
   });

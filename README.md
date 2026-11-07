@@ -10,9 +10,11 @@ Aplicación portátil para diseñar y verificar sifones invertidos y estaciones 
 
 ## Qué calcula
 
-**Sifón invertido:** número y diámetro de conductos para Qmin, Qmed y Qmax; velocidades; pérdidas de entrada, fricción, codos y salida; niveles en cámaras; vertederos de regulación; perfil y cotas.
+**Sifón invertido:** número y diámetro de conductos para Qmin, Qmed y Qmax; velocidades; pérdidas de entrada, fricción, codos y salida; niveles en cámaras; vertederos de regulación; perfil y cotas. También describe el obstáculo (río, arroyo, canal, vía, vía férrea, otra red o depresión), el tipo de cámara de entrada y de salida, los separadores, los vertederos y la tubería, con vista en planta, sección de los conductos, corte de la cámara, tabla de cotas y pendientes.
 
-**Sistema de bombeo:** curva del sistema; punto de operación con la curva de bomba suministrada; potencia y eficiencia; NPSH disponible y requerido; velocidades en succión e impulsión; sumergencia; golpe de ariete (Joukowsky y cierre lento); pozo húmedo.
+**Sistema de bombeo:** curva del sistema; punto de operación con la curva de bomba suministrada; potencia y eficiencia; NPSH disponible y requerido; velocidades en succión e impulsión; sumergencia; golpe de ariete (Joukowsky y cierre lento); pozo húmedo. Además: cotas de succión e impulsión, tanque de descarga, accesorios (codos, tees, válvulas) con su K, diferencia entre tubería de succión e impulsión, y comparación de bombas en serie y en paralelo cuando la curva no alcanza.
+
+**Autocompletado:** los campos marcados AUTO se pueden dejar vacíos. La aplicación los llena con el mínimo de la norma o un valor genérico y muestra el procedimiento y la fuente.
 
 ## Contenido
 
@@ -37,7 +39,7 @@ node tests/engine.test.js
 python tests/verificacion_independiente.py
 ```
 
-El primero ejecuta 20 casos (normales, en el límite, fuera de norma e inválidos). El segundo recalcula 57 variables del caso base con fórmulas escritas aparte.
+El primero ejecuta 26 casos (normales, en el límite, fuera de norma, inválidos y con autocompletado). El segundo recalcula 57 variables del caso base con fórmulas escritas aparte.
 
 Para regenerar la aplicación después de cambiar el código:
 
@@ -75,6 +77,10 @@ Las tablas B.8.2 y D.8.1 también difieren en el último renglón: "mayor que 40
 4. **Art. 141, 142, 149 y 150.** Se escribieron para colectores. Se aplican como recomendación en el sifón, apoyados en RAS D.7.8.2, y así se indica.
 5. **Carga sobre vertederos y criterio de 90 % de η máxima.** Son criterios de diseño adoptados, no límites normativos.
 6. **Art. 160.6 con RAS D.8.4.7.4.** Juntos dejan una franja estrecha, de 0,60 a 0,70 m/s, que se trata como obligatoria en alcantarillado.
+7. **Recubrimiento bajo el obstáculo.** Río 1,5 m, arroyo 1,0 m, canal 1,0 m, vía 1,2 m, vía férrea 1,5 m, otra red 0,3 m y depresión 0,6 m. Son criterios del grupo, editables; la entidad dueña del cruce puede pedir otros.
+8. **Cámaras.** Compartimiento de ancho D + 0,30 m (mínimo 0,60 m), largo mínimo 1,50 m, tapa 1,20 m sobre la clave del colector y borde libre de 0,30 m. Son criterios de diseño.
+9. **Coeficientes K de accesorios.** Valores usuales (codo 90° 0,9; tee lateral 1,8; cheque 2,5; compuerta 0,2, entre otros), editables en la tabla.
+10. **Caudal de operación.** Se recomienda que quede entre Qd y Qd + 10 %. Si lo supera, la aplicación calcula la frecuencia del variador con las leyes de afinidad.
 
 ### Valores por confirmar
 
