@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Instructivo de uso</title>
+<style>
+@page{size:Letter;margin:11mm 14mm}
+*{box-sizing:border-box}
+body{font:9.5pt/1.3 "Segoe UI",Arial,sans-serif;color:#14181a;margin:0}
+h1{font-size:17pt;margin:0;color:#0f5e7c}
+.sub{color:#4b5155;margin:2pt 0 9pt;font-size:9.5pt}
+h2{font-size:10.4pt;margin:7pt 0 2pt;color:#0f5e7c;border-bottom:1px solid #d9dcd5;padding-bottom:1pt}
+ol,ul{margin:2pt 0 0;padding-left:15pt}
+li{margin-bottom:2pt}
+table{border-collapse:collapse;width:100%;font-size:8.8pt;margin-top:3pt}
+th,td{border:1px solid #c9cdc6;padding:2.5pt 5pt;text-align:left;vertical-align:top}
+th{background:#eef0ec}
+.box{background:#fbeed2;padding:5pt 8pt;border-radius:4pt;font-size:9.2pt;margin-top:7pt}
+</style></head><body>
+<h1>Instructivo de uso</h1>
+<p class="sub">Sifones invertidos y sistemas de bombeo · Acueducto y Alcantarillado · Proyecto AA-PF-01, Grupo G2</p>
+
+<h2>1. Abrir la aplicación</h2>
+<p>Haga doble clic en <b>Sifones_invertidos_y_sistemas_de_bombeo.html</b>. Abre en Chrome, Edge o Firefox sin instalar nada y funciona con o sin internet. El modelo 3D necesita WebGL; si el equipo no lo tiene, el resto de la aplicación sigue funcionando.</p>
+
+<h2>2. Calcular</h2>
+<ol>
+<li>Entre a <b>Sifón invertido</b> o <b>Sistema de bombeo</b> en la barra superior.</li>
+<li>Escriba los datos en el panel izquierdo. Cada campo muestra su unidad y acepta coma o punto decimal. Los resultados cambian mientras escribe.</li>
+<li>Para una prueba rápida, use los botones <b>Cargar caso</b>: cumple, en el límite, fuera de norma e inválido.</li>
+</ol>
+
+<h2>3. Leer los resultados</h2>
+<table>
+<tr><th style="width:27%">Pestaña</th><th>Qué muestra</th></tr>
+<tr><td><b>Resultados</b></td><td>Valores principales y la lista "Qué falta o qué corregir": parámetro, límite, fuente, corrección y un enlace al dato.</td></tr>
+<tr><td><b>Perfil</b></td><td>Esquema con cotas y valores calculados. El flujo se mueve según la velocidad real. Cambie entre Qmin, Qmed y Qmax.</td></tr>
+<tr><td><b>Modelo 3D</b></td><td>Arrastre para girar, use la rueda para acercar y Mayús + arrastre para desplazar.</td></tr>
+<tr><td><b>Gráficas</b></td><td>Pérdidas y velocidades del sifón; punto de operación, eficiencia, potencia, NPSH y golpe de ariete del bombeo.</td></tr>
+<tr><td><b>Cadena de datos</b></td><td>Cada paso del cálculo, qué datos usa y de qué depende. Si falta un dato, indica qué pasos bloquea y por qué.</td></tr>
+<tr><td><b>Verificaciones</b></td><td>Cada límite con su valor, su estado y su fuente: norma con artículo, o texto con página.</td></tr>
+<tr><td><b>Memoria paso a paso</b></td><td>Fórmulas con los números reemplazados, para comprobar a mano con calculadora.</td></tr>
+</table>
+
+<h2>4. Interpretar el estado</h2>
+<ul>
+<li><b>No cumple:</b> incumple un límite obligatorio de la Resolución 0330 de 2017.</li>
+<li><b>Recomendación:</b> no alcanza un criterio de guía técnica (RAS o HEC-22).</li>
+<li><b>Sin evaluar o bloqueado:</b> falta un dato o hay un dato inválido en la cadena.</li>
+</ul>
+
+<h2>5. Exportar e importar</h2>
+<ul>
+<li><b>PDF</b> (barra superior): memoria con datos, resultados, verificaciones, advertencias, esquemas, gráficas y referencias.</li>
+<li><b>Excel</b> (barra superior): 16 hojas con datos, resultados, curvas, matriz normativa y plan de pruebas.</li>
+<li><b>Exportar:</b> escriba los datos de la portada, abra la vista de impresión o traiga datos desde un Excel descargado de la aplicación, tras cambiar la columna Valor de las hojas Sifon_Datos y Bomba_Datos.</li>
+</ul>
+
+<h2>6. Otras secciones</h2>
+<p><b>Límites normativos:</b> matriz de trazabilidad (Anexo B). <b>Referencias:</b> fuentes y ubicación de cada ecuación. <b>Plan de pruebas:</b> 20 casos ejecutables, 10 por módulo.</p>
+
+<div class="box"><b>Solución de problemas.</b> Si el archivo se abre como texto, use clic derecho, "Abrir con" y elija un navegador. Si quiere volver a los valores iniciales, pulse <b>Restablecer</b>. Los datos se guardan solo en ese navegador.</div>
+</body></html>
