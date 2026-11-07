@@ -4,7 +4,9 @@ Aplicación portátil para diseñar y verificar sifones invertidos y estaciones 
 
 ## Cómo usarla
 
-Abra `Sifones_invertidos_y_sistemas_de_bombeo.html` con doble clic. No necesita instalación ni internet. Vea `docs/Instructivo_de_uso.pdf`.
+**En línea:** https://juanph-m.github.io/sifones-invertidos-y-sistemas-de-bombeo/
+
+**Sin internet:** descargue `Sifones_invertidos_y_sistemas_de_bombeo.html` y ábralo con doble clic. No necesita instalación. Vea `docs/Instructivo_de_uso.pdf`.
 
 ## Qué calcula
 
